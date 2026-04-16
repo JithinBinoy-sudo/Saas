@@ -179,7 +179,7 @@ CREATE TABLE pipeline_runs (
 ```sql
 CREATE TABLE column_mappings (
   company_id       uuid REFERENCES companies(id) PRIMARY KEY,
-  mappings         jsonb NOT NULL,   -- { "confirmation_code": "Booking Ref", "arca_id": "Property ID", ... }
+  mappings         jsonb NOT NULL,   -- { "confirmation_code": "Booking Ref", "listing_id": "Property ID", ... }
   sample_headers   jsonb NOT NULL,   -- original headers detected from their Excel file
   updated_at       timestamptz DEFAULT now()
 );
@@ -364,7 +364,7 @@ Your Column            →   Required Field
 - Optional unmapped fields show soft warning (e.g., "Commission not mapped — will default to $0")
 
 **Required fields:**
-`confirmation_code`, `listing_nickname`, `check_in_date`, `check_out_date`, `nights`, `net_accommodation_fare`, `arca_id`
+`confirmation_code`, `listing_nickname`, `check_in_date`, `check_out_date`, `nights`, `net_accommodation_fare`, `listing_id`
 
 **Optional fields (defaulted if unmapped):**
 - `commission` → defaults to `0`

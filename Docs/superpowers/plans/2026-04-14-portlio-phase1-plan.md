@@ -108,7 +108,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `jest.setup.ts`
 - Create: `.env.local.example`
 
-- [ ] **Step 1: Bootstrap Next.js 14 project**
+- [x] **Step 1: Bootstrap Next.js 14 project**
 
   Run in the workspace root:
   ```
@@ -116,14 +116,14 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   ```
   When prompted: choose **not** to use Turbopack (use default Webpack for broader compatibility).
 
-- [ ] **Step 2: Install core dependencies**
+- [x] **Step 2: Install core dependencies**
 
   ```
   npm install @supabase/supabase-js @supabase/ssr zod xlsx
   npm install --save-dev jest @types/jest jest-environment-jsdom @testing-library/react @testing-library/jest-dom ts-jest
   ```
 
-- [ ] **Step 3: Install shadcn/ui**
+- [x] **Step 3: Install shadcn/ui**
 
   ```
   npx shadcn@latest init
@@ -135,13 +135,13 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   npx shadcn@latest add button input label card tabs badge toast progress
   ```
 
-- [ ] **Step 4: Configure Jest**
+- [x] **Step 4: Configure Jest**
 
   Create `jest.config.ts` — configure for Next.js using `next/jest`, set `testEnvironment: 'jsdom'`, and point `setupFilesAfterFramework` to `jest.setup.ts`.
 
   Create `jest.setup.ts` — import `@testing-library/jest-dom`.
 
-- [ ] **Step 5: Create `.env.local.example`**
+- [x] **Step 5: Create `.env.local.example`**
 
   Document all required environment variables:
   ```
@@ -153,14 +153,14 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   Developer note: generate `ENCRYPTION_SECRET` with `openssl rand -hex 32`.
 
-- [ ] **Step 6: Verify scaffold compiles**
+- [x] **Step 6: Verify scaffold compiles**
 
   ```
   npm run dev
   ```
   Expected: Next.js dev server starts on `http://localhost:3000` with no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   ```
   git add .
@@ -176,7 +176,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `supabase/migrations/002_hosted_reservations.sql`
 - Create: `supabase/migrations/003_hosted_views.sql`
 
-- [ ] **Step 1: Write migration 001 — App schema tables**
+- [x] **Step 1: Write migration 001 — App schema tables**
 
   `supabase/migrations/001_app_schema.sql` must create these tables in order:
   1. `companies` — id, name, mode ('hosted'|'byos'), supabase_url (encrypted), supabase_service_key (encrypted), openai_api_key (encrypted), schema_deployed (bool, default false), created_at
@@ -187,7 +187,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   Enable RLS on all tables. Add policy: authenticated users can only read/write rows where `company_id` matches their own company.
 
-- [ ] **Step 2: Write migration 002 — Hosted reservations**
+- [x] **Step 2: Write migration 002 — Hosted reservations**
 
   `supabase/migrations/002_hosted_reservations.sql` must create:
   1. `reservations` — all 32 columns from `Docs/schema_readme.md`, **plus** `company_id uuid REFERENCES companies(id) NOT NULL`. Primary key: `(company_id, confirmation_code)`.
@@ -195,7 +195,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   RLS on both tables: authenticated users access only rows where `company_id` matches their company.
 
-- [ ] **Step 3: Write migration 003 — Hosted views**
+- [x] **Step 3: Write migration 003 — Hosted views**
 
   `supabase/migrations/003_hosted_views.sql` must create all 8 views from `Docs/schema_readme.md` in dependency order:
   1. `nights_exploded_silver`
@@ -209,7 +209,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   All views must use `WITH (security_invoker = on)` — this ensures RLS on `reservations` filters automatically by company, so no view changes are needed.
 
-- [ ] **Step 4: Run migrations in Supabase**
+- [x] **Step 4: Run migrations in Supabase**
 
   1. Go to your Supabase project dashboard → SQL Editor
   2. Run `001_app_schema.sql` first, verify no errors
@@ -217,7 +217,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   4. Run `003_hosted_views.sql`, verify no errors
   5. Confirm all tables appear under Table Editor
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```
   git add supabase/
@@ -232,21 +232,21 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `lib/encryption.ts`
 - Create: `lib/__tests__/encryption.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
   `lib/__tests__/encryption.test.ts` — write tests for:
   - `encrypt(text)` then `decrypt(result)` returns the original text
   - Encrypting the same string twice produces different outputs (IV randomness)
   - `decrypt` throws on tampered ciphertext
 
-- [ ] **Step 2: Run tests to confirm they fail**
+- [x] **Step 2: Run tests to confirm they fail**
 
   ```
   npx jest lib/__tests__/encryption.test.ts
   ```
   Expected: FAIL — `encrypt` not defined.
 
-- [ ] **Step 3: Implement encryption**
+- [x] **Step 3: Implement encryption**
 
   `lib/encryption.ts` — implement using Node.js built-in `crypto`:
   - Algorithm: `aes-256-gcm`
@@ -256,14 +256,14 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   - Output format: base64 string of `[iv (12 bytes) + authTag (16 bytes) + ciphertext]`
   - Export: `encrypt(text: string): string` and `decrypt(encoded: string): string`
 
-- [ ] **Step 4: Run tests to confirm they pass**
+- [x] **Step 4: Run tests to confirm they pass**
 
   ```
   npx jest lib/__tests__/encryption.test.ts
   ```
   Expected: PASS — 3 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```
   git add lib/encryption.ts lib/__tests__/encryption.test.ts
@@ -278,17 +278,17 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `lib/supabase/server.ts`
 - Create: `lib/supabase/browser.ts`
 
-- [ ] **Step 1: Create server-side Supabase client**
+- [x] **Step 1: Create server-side Supabase client**
 
   `lib/supabase/server.ts` — export `createAppServerClient()` using `createServerClient` from `@supabase/ssr`. Must read/write cookies from Next.js `cookies()` (from `next/headers`). Uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
   Also export `createAppAdminClient()` using the service role key (`SUPABASE_SERVICE_ROLE_KEY`) for operations that need to bypass RLS (e.g., creating a user record after signup).
 
-- [ ] **Step 2: Create browser-side Supabase client**
+- [x] **Step 2: Create browser-side Supabase client**
 
   `lib/supabase/browser.ts` — export `createAppBrowserClient()` using `createBrowserClient` from `@supabase/ssr`. Uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Safe to call in Client Components.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
   ```
   git add lib/supabase/
@@ -303,21 +303,21 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `lib/getDataClient.ts`
 - Create: `lib/__tests__/getDataClient.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
   `lib/__tests__/getDataClient.test.ts` — mock `lib/supabase/server.ts` and `lib/encryption.ts`. Write tests for:
   - When `company.mode === 'hosted'`, returns the app Supabase client
   - When `company.mode === 'byos'`, calls `decrypt` on both credentials and creates a client pointed at the company's Supabase URL
   - When `company.mode === 'byos'` and credentials are null, throws an error
 
-- [ ] **Step 2: Run tests to confirm they fail**
+- [x] **Step 2: Run tests to confirm they fail**
 
   ```
   npx jest lib/__tests__/getDataClient.test.ts
   ```
   Expected: FAIL — `getDataClient` not defined.
 
-- [ ] **Step 3: Implement getDataClient**
+- [x] **Step 3: Implement getDataClient**
 
   `lib/getDataClient.ts` — export `getDataClient(company)` where `company` has shape `{ mode: string; supabase_url?: string | null; supabase_service_key?: string | null }`.
 
@@ -325,14 +325,14 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   - `mode === 'byos'` → decrypt both credentials, return `createClient(url, key)` from `@supabase/supabase-js`
   - If `byos` credentials are missing → throw `Error('BYOS credentials not configured')`
 
-- [ ] **Step 4: Run tests to confirm they pass**
+- [x] **Step 4: Run tests to confirm they pass**
 
   ```
   npx jest lib/__tests__/getDataClient.test.ts
   ```
   Expected: PASS — 3 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```
   git add lib/getDataClient.ts lib/__tests__/getDataClient.test.ts
@@ -349,7 +349,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `lib/validations/__tests__/auth.test.ts`
 - Create: `lib/validations/__tests__/onboarding.test.ts`
 
-- [ ] **Step 1: Write failing tests for auth schemas**
+- [x] **Step 1: Write failing tests for auth schemas**
 
   `lib/validations/__tests__/auth.test.ts` — test the signup schema:
   - Accepts valid `{ company_name, email, password }`
@@ -358,42 +358,42 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   - Rejects password shorter than 8 characters
   - Rejects company_name longer than 100 characters
 
-- [ ] **Step 2: Write failing tests for onboarding schemas**
+- [x] **Step 2: Write failing tests for onboarding schemas**
 
   `lib/validations/__tests__/onboarding.test.ts` — test:
   - OpenAI key schema: accepts `sk-` prefixed strings, rejects empty
   - Column mapping schema: accepts valid jsonb mappings object, rejects when required fields missing from mappings
   - BYOS credentials schema: accepts valid URL + key pair, rejects malformed Supabase URL
 
-- [ ] **Step 3: Run to confirm they fail**
+- [x] **Step 3: Run to confirm they fail**
 
   ```
   npx jest lib/validations/__tests__/
   ```
   Expected: FAIL — schemas not defined.
 
-- [ ] **Step 4: Implement auth schemas**
+- [x] **Step 4: Implement auth schemas**
 
   `lib/validations/auth.ts` — export `signupSchema` (Zod object) with:
   - `company_name`: string, min 2, max 100
   - `email`: string email
   - `password`: string, min 8
 
-- [ ] **Step 5: Implement onboarding schemas**
+- [x] **Step 5: Implement onboarding schemas**
 
   `lib/validations/onboarding.ts` — export:
   - `openaiKeySchema`: string starting with `sk-`, min length 20
-  - `columnMappingSchema`: object with `mappings` (record of string to string) and `sample_headers` (array of strings). Validate that all 7 required field keys are present in `mappings`: `confirmation_code`, `listing_nickname`, `check_in_date`, `check_out_date`, `nights`, `net_accommodation_fare`, `arca_id`.
+  - `columnMappingSchema`: object with `mappings` (record of string to string) and `sample_headers` (array of strings). Validate that all 7 required field keys are present in `mappings`: `confirmation_code`, `listing_nickname`, `check_in_date`, `check_out_date`, `nights`, `net_accommodation_fare`, `listing_id`.
   - `byosCredentialsSchema`: object with `supabase_url` (string URL matching `*.supabase.co`) and `supabase_service_key` (string, min 20 chars)
 
-- [ ] **Step 6: Run tests to confirm they pass**
+- [x] **Step 6: Run tests to confirm they pass**
 
   ```
   npx jest lib/validations/__tests__/
   ```
   Expected: PASS — all tests passing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   ```
   git add lib/validations/
@@ -408,7 +408,7 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 - Create: `app/api/auth/signup/route.ts`
 - Create: `app/api/auth/signup/__tests__/route.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
   `app/api/auth/signup/__tests__/route.test.ts` — mock `createAppAdminClient`. Test the POST handler:
   - Returns 400 with field errors when payload is invalid (missing email, short password)
@@ -416,14 +416,14 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   - Returns 409 when email already exists (Supabase returns `User already registered`)
   - Returns 500 when Supabase admin call fails unexpectedly
 
-- [ ] **Step 2: Run tests to confirm they fail**
+- [x] **Step 2: Run tests to confirm they fail**
 
   ```
   npx jest app/api/auth/signup/__tests__/route.test.ts
   ```
   Expected: FAIL — route handler not defined.
 
-- [ ] **Step 3: Implement the route**
+- [x] **Step 3: Implement the route**
 
   `app/api/auth/signup/route.ts` — export `POST` handler:
   1. Parse and validate body with `signupSchema` — return 400 with Zod errors if invalid
@@ -435,14 +435,14 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   Note: do NOT seed `prompt_configs` here. It is seeded at onboarding completion — in the column-mapping route (hosted mode) and the schema-deploy route (BYOS mode).
 
-- [ ] **Step 4: Run tests to confirm they pass**
+- [x] **Step 4: Run tests to confirm they pass**
 
   ```
   npx jest app/api/auth/signup/__tests__/route.test.ts
   ```
   Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```
   git add app/api/auth/signup/
@@ -726,8 +726,9 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   `app/api/onboarding/sample-excel/route.ts` — GET handler:
   - Use the `xlsx` package to create a workbook with one sheet called "Reservations"
-  - Sheet headers (row 1): all required + optional column names with human-readable names, e.g. "Confirmation Code", "Property Name", "Check-In Date", "Check-Out Date", "Nights", "Net Accommodation Fare", "ARCA ID", "Source", "Commission", and the remaining 23 optional columns from `Docs/schema_readme.md`
+  - Sheet headers (row 1): the 7 required columns — "Confirmation Code", "Listing Nickname", "Check-In Date", "Check-Out Date", "Nights", "Net Accommodation Fare", "Listing ID" — plus ~6 example optional columns to illustrate common ones companies tend to carry: "Source", "Channel", "Guest Name", "Commission", "Cleaning Fee", "Currency"
   - Sheet rows 2–4: 3 rows of realistic dummy property data (use fictional property names, realistic dates and revenue figures)
+  - Add a second sheet called "Readme" with one row of guidance text: "The 7 required columns above must exist in your upload (any header name is fine — you'll map them in the next step). Any additional columns you include will be preserved as custom fields unless you choose to skip them."
   - Return the file as a binary stream with headers:
     - `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
     - `Content-Disposition: attachment; filename="portlio-sample-upload.xlsx"`
@@ -757,10 +758,10 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   `components/onboarding/__tests__/ColumnMappingStep.test.tsx`:
   - Renders sample preview table and "Download Sample Excel" button before file upload
   - After file upload, renders a mapping row for each detected Excel header
-  - Required fields show "✓ Required" label; optional fields show "○ Optional"
-  - Shows hard error if user tries to continue with unmapped required fields
-  - Shows soft warning for unmapped optional fields (commission, source)
-  - "Continue" button disabled until all required fields are mapped
+  - Each row has a dropdown with three categories of options: the 7 required fields, "Include as custom field" (default for unmatched headers), and "Skip this column"
+  - Each required field can only be assigned once — picking it in one row removes it from other rows' dropdowns
+  - Shows hard error per-field if user tries to continue with any of the 7 required fields unmapped
+  - "Continue" button disabled until all 7 required fields are mapped
   - On continue: calls `onComplete` callback
 
 - [ ] **Step 2: Run to confirm they fail**
@@ -774,8 +775,8 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   `app/api/onboarding/column-mapping/route.ts` — POST handler:
   1. Validate session — get `company_id`
-  2. Validate body with `columnMappingSchema`
-  3. Upsert into `column_mappings` table: `{ company_id, mappings, sample_headers }`
+  2. Validate body with `columnMappingSchema`. Body shape: `{ mappings: Record<required_field, excel_header>, custom_fields: string[], skipped: string[], sample_headers: string[] }`. `custom_fields` holds Excel headers to preserve into the `data` jsonb; `skipped` holds headers to drop during ingest.
+  3. Upsert into `column_mappings` table: `{ company_id, mappings, custom_fields, skipped, sample_headers }` (custom_fields + skipped live inside the same `mappings` jsonb blob — no schema change needed)
   4. If company `mode === 'hosted'`: set `companies.schema_deployed = true` and seed default `prompt_configs` row (if not already seeded)
   5. Return 200 with `{ schema_deployed: true }`
 
@@ -795,16 +796,17 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
 
   **Part C — Mapping table:**
   - Left column: detected Excel header name
-  - Right column: dropdown of available target fields + "Skip this column" option
-  - Required fields: show "✓ Required" badge
-  - Optional fields: show "○ Optional" badge
-  - Pre-populate dropdown via fuzzy matching (e.g., "Booking Ref" → "Confirmation Code")
+  - Right column: dropdown with three option groups:
+    - **Required fields** (7 total) — each shows "✓ Required" badge; an assigned required field is removed from other rows' dropdowns
+    - **"Include as custom field"** — default selection for any header that doesn't fuzzy-match a required field; preserved into `data` jsonb under the original header as the key
+    - **"Skip this column"** — drop during ingest
+  - Pre-populate dropdown via fuzzy matching (e.g., "Booking Ref" → "Confirmation Code"); otherwise default to "Include as custom field"
 
   **Validation on "Continue":**
   - All 7 required fields must be mapped — show per-field error if not
-  - Unmapped optional fields: show warning toast but do not block
+  - No warnings for custom fields — they're first-class and expected
 
-  On continue: call `POST /api/onboarding/column-mapping` with `{ mappings, sample_headers }`, then call `onComplete()`.
+  On continue: derive `custom_fields` (headers mapped to "Include as custom field") and `skipped` (headers mapped to "Skip this column"). Call `POST /api/onboarding/column-mapping` with `{ mappings, custom_fields, skipped, sample_headers }`, then call `onComplete()`.
 
 - [ ] **Step 5: Run tests to confirm they pass**
 
@@ -853,10 +855,15 @@ All code lives **outside** the `Docs/` folder. The project root is the workspace
   2. Validate body with `byosCredentialsSchema`
   3. Encrypt credentials with `encrypt()` and save to `companies` table
   4. Create Supabase client using the decrypted service role key
-  5. Execute DDL statements in order from `supabase/migrations/002_hosted_reservations.sql` and `supabase/migrations/003_hosted_views.sql` — but against the user's Supabase (not the reservations/views from 002 which include company_id — use the original schema from `Docs/schema_readme.md` without company_id)
+  5. Import the DDL array from `lib/schema/byos-ddl.ts` (see prep step below) and execute each entry in order against the user's Supabase. The array is the single source of truth for the BYOS schema.
   6. Track each object (success/fail) and return the results array
   7. If all required objects succeeded: set `companies.schema_deployed = true` and seed default `prompt_configs`
   8. Return 200 with `{ results: [{ object, status, error? }] }`
+
+  **Prep: create `lib/schema/byos-ddl.ts`** — exports `BYOS_DDL: Array<{ name: string; type: 'table' | 'view'; sql: string }>`. Contents mirror the hosted migrations but without `company_id` columns, without RLS, and without RLS policies:
+  - `reservations` table: 7 typed required columns + `data jsonb NOT NULL DEFAULT '{}'`, PRIMARY KEY on `confirmation_code` alone
+  - `monthly_portfolio_briefings` table: `revenue_month` as sole PK
+  - The 8 views from hosted mode with `company_id` columns and partitions stripped (since the whole BYOS database belongs to one company)
 
   Rate limit: max 3 requests per company per day (check `pipeline_runs` count or use a simple counter in the `companies` table).
 

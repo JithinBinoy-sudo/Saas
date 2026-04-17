@@ -26,3 +26,23 @@
 - [x] Task 18: Full End-to-End Verification (63 tests passing, clean typecheck, production build)
 
 Plan reference: `Docs/superpowers/plans/2026-04-14-portlio-phase1-plan.md`
+
+## Phase 2 — Excel Upload & Data Ingestion
+
+- [x] Task 19: Excel Upload API Route (Parse Excel, map columns, upsert to reservations)
+- [x] Task 20: Upload Page UI (Drag-and-drop, UI preview, progress feedback)
+- [x] Task 21: Data Validation Layer (Row-level validation checks)
+- [x] Task 22: Upload History (upload_runs table and history page)
+
+Plan reference: `Docs/superpowers/plans/2026-04-16-portlio-phase2-plan.md`
+
+## Phase 3 — Analytics Dashboard
+
+- [x] Task 23: Analytics Query Layer (`lib/analytics/queries.ts` + types + tests)
+- [x] Task 24: KPI Card Components (`KpiCard`, `KpiCardRow`)
+- [x] Task 25: Revenue Trend Chart (Recharts `ComposedChart` — bar + line)
+- [x] Task 26: Property Breakdown Table (sortable, delta-coloured)
+- [x] Task 27: Channel Mix Chart (Recharts `PieChart`)
+- [x] Task 28: Wire Up Dashboard Page (MonthPicker, empty state, server component data fetch)
+
+Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase3-plan.md`

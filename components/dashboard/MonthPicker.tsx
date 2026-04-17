@@ -27,7 +27,8 @@ export function MonthPicker({ availableMonths, selectedMonth }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  function handleChange(value: string) {
+  function handleChange(value: string | null) {
+    if (!value) return;
     const params = new URLSearchParams();
     params.set('month', value);
     router.push(`${pathname}?${params.toString()}`);

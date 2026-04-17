@@ -62,11 +62,11 @@ export function RevenueTrendChart({ data }: Props) {
             tick={{ fontSize: 12, fill: '#64748b' }}
           />
           <Tooltip
-            formatter={(value: number, name: string) => [
-              `$${value.toLocaleString()}`,
+            formatter={(value, name) => [
+              `$${Number(value).toLocaleString()}`,
               name === 'total_revenue' ? 'Revenue' : 'ADR',
             ]}
-            labelFormatter={formatMonth}
+            labelFormatter={(label) => formatMonth(String(label))}
           />
           <Legend
             formatter={(value: string) =>

@@ -57,8 +57,10 @@ export function ChannelMixChart({ data }: Props) {
             cx="50%"
             cy="50%"
             outerRadius={100}
-            label={({ channel_label, revenue_share }) =>
-              `${channel_label} ${(revenue_share * 100).toFixed(0)}%`
+            label={({ payload }: { payload?: ChannelMixRow }) =>
+              payload
+                ? `${payload.channel_label} ${(payload.revenue_share * 100).toFixed(0)}%`
+                : ''
             }
             labelLine={false}
           >
@@ -67,9 +69,8 @@ export function ChannelMixChart({ data }: Props) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number, name: string) => [
-              `$${value.toLocaleString()}`,
-              name,
+            formatter={(value) => [
+              `$${Number(value).toLocaleString()}`,
             ]}
           />
           <Legend />

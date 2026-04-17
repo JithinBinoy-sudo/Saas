@@ -46,3 +46,19 @@ Plan reference: `Docs/superpowers/plans/2026-04-16-portlio-phase2-plan.md`
 - [x] Task 28: Wire Up Dashboard Page (MonthPicker, empty state, server component data fetch)
 
 Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase3-plan.md`
+
+## Phase 4 — AI Pipeline Runner (Multi-Provider) & Briefing Viewer
+
+- [x] Task 29: DB Migration — add `anthropic_api_key`, `google_api_key` to companies; `model` to pipeline_runs + briefings
+- [x] Task 30: Pipeline Library — Types, `computeHash`, `getProvider` (infer provider from model ID)
+- [x] Task 31: Provider Adapters — `AIProvider` interface + OpenAI, Anthropic, Google implementations
+      - Google models: `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-3-flash-preview` (Preview), `gemini-3.1-flash-lite-preview` (Preview)
+- [x] Task 32: `buildPrompt` — provider-agnostic prompt assembly from monthly data
+- [x] Task 33: `POST /api/pipeline/run` (multi-provider route) + `PATCH /api/pipeline/config` (save preferred model)
+- [x] Task 34: Onboarding — update AI Keys step to multi-tab (OpenAI | Claude | Gemini) with per-provider validation
+- [x] Task 35: Run Pipeline UI — model selector dropdown with "Preview" badge on Gemini 3.x models, Briefing Viewer page, Dashboard & Sidebar integration
+
+Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase4-plan.md`
+
+
+

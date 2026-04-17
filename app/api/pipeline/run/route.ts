@@ -20,14 +20,14 @@ export async function POST(request: NextRequest) {
   }
 
   // Parse body
-  let body: { revenue_month?: string; model?: string };
+  let body: { revenue_month?: string; model?: string; preview?: boolean };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { revenue_month, model } = body;
+  const { revenue_month, model, preview } = body;
   if (!revenue_month || !model) {
     return NextResponse.json({ error: 'revenue_month and model are required' }, { status: 400 });
   }
@@ -140,6 +140,39 @@ export async function POST(request: NextRequest) {
   };
 
   const dataHash = computeHash(pipelineInput);
+
+  // --- Preview mode: run AI but skip all persistence ---
+  if (preview) {
+    try {
+      const { system, user: userPrompt } = buildPrompt(
+        pipelineInput,
+        promptConfig?.system_prompt,
+        promptConfig?.user_prompt_template
+      );
+
+      const provider = createProvider(providerName, apiKey);
+      const result = await provider.chat({
+        system,
+        user: userPrompt,
+        model,
+        temperature,
+        maxTokens,
+      });
+
+      return NextResponse.json({
+        briefing_text: result.text,
+        model,
+        prompt_tokens: result.promptTokens,
+        completion_tokens: result.completionTokens,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (message.includes('timeout') || message.includes('TIMEOUT')) {
+        return NextResponse.json({ error: 'Provider timeout' }, { status: 504 });
+      }
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
 
   // 12. Check existing briefing hash → 409 if unchanged
   let briefingQuery = admin

@@ -23,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/properties', label: 'Properties' },
   { href: '/dashboard/reports', label: 'Reports' },
   { href: '/dashboard/upload', label: 'Upload' },
+  { href: '/dashboard/upload/history', label: 'Upload History' },
 ];
 
 const SETTINGS_ITEMS: NavItem[] = [

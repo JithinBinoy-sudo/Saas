@@ -60,5 +60,15 @@ Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase3-plan.md`
 
 Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase4-plan.md`
 
+## Phase 5 — Admin Prompt Management & Excel Report Export
+
+- [x] Task 36: Prompt Config API (`GET + PATCH /api/pipeline/prompt`) + `preview: true` mode on pipeline run route
+- [x] Task 37: Prompt Management UI (`/dashboard/settings/prompt`) — form with all `prompt_configs` fields, placeholder warnings, test-run panel
+- [x] Task 38: Excel Export Library (`lib/export/buildReservationReport.ts`) — two-sheet workbook with Summary + Raw Reservations (JSONB expansion)
+- [x] Task 39: Export API Route (`GET /api/export/reservations`) + Export UI (`ExportButton`, `/dashboard/settings/export` page)
+- [x] Task 40: Sidebar Settings group + full end-to-end verification
+
+Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase5-plan.md`
+
 
 

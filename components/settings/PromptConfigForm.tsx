@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SUPPORTED_MODELS } from '@/lib/pipeline/types';
-import type { AIProviderName } from '@/lib/pipeline/types';
+
 
 export type PromptConfig = {
   system_prompt: string;

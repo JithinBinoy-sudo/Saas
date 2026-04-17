@@ -35,15 +35,9 @@ type TestState = 'idle' | 'loading' | 'done' | 'error';
 type Props = {
   model: string;
   availableMonths: string[];
-  formValues?: {
-    system_prompt: string;
-    user_prompt_template: string;
-    temperature: number;
-    max_tokens: number;
-  };
 };
 
-export function PromptTestPanel({ model, availableMonths, formValues }: Props) {
+export function PromptTestPanel({ model, availableMonths }: Props) {
   const [selectedMonth, setSelectedMonth] = useState(availableMonths[0] ?? '');
   const [state, setState] = useState<TestState>('idle');
   const [result, setResult] = useState<TestResult | null>(null);

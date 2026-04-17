@@ -9,6 +9,7 @@ import {
 } from '../queries';
 
 /** Creates a mock Supabase client with chainable query builder. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function mockClient(resolvedData: unknown, resolvedError: unknown = null) {
   const terminal = {
     data: resolvedData,

@@ -29,6 +29,8 @@ const NAV_ITEMS: NavItem[] = [
 
 const SETTINGS_ITEMS: NavItem[] = [
   { href: '/dashboard/settings', label: 'Settings' },
+  { href: '/dashboard/settings/prompt', label: 'AI Prompt', adminOnly: true },
+  { href: '/dashboard/settings/export', label: 'Export Data' },
   { href: '/admin', label: 'Admin', adminOnly: true },
 ];
 

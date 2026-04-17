@@ -32,7 +32,7 @@ const patchSchema = z.object({
   max_tokens: z.number().int().min(100).max(4000).optional(),
 }).strict();
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   const supabase = createAppServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

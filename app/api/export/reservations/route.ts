@@ -157,7 +157,8 @@ export async function GET(request: NextRequest) {
   });
 
   // 8. Return file
-  return new NextResponse(buffer, {
+  const uint8 = new Uint8Array(buffer);
+  return new NextResponse(uint8, {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

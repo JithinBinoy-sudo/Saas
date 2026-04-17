@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 12. Check existing briefing hash → 409 if unchanged
-  let briefingQuery = admin
+  const briefingQuery = admin
     .from('monthly_portfolio_briefings')
     .select('data_hash')
     .eq('revenue_month', revenue_month)

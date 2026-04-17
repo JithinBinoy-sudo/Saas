@@ -3,7 +3,7 @@ import { createAppServerClient } from '@/lib/supabase/server';
 import { getDataClient } from '@/lib/getDataClient';
 import { fetchMonthlySummary } from '@/lib/analytics/queries';
 import { BriefingCard } from '@/components/pipeline/BriefingCard';
-import { KpiCardRow } from '@/components/dashboard/KpiCardRow';
+
 
 export const metadata = {
   title: 'Portlio — Briefing',

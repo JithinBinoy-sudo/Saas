@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { createAppServerClient } from '@/lib/supabase/server';
-import { getDataClient } from '@/lib/getDataClient';
 import { fetchDashboardData } from '@/lib/analytics/queries';
 import { DashboardEmptyState } from '@/components/dashboard/DashboardEmptyState';
 import { MonthPicker } from '@/components/dashboard/MonthPicker';
@@ -39,27 +38,13 @@ export default async function DashboardPage({
 
   const { data: companyRow } = await supabase
     .from('companies')
-    .select('mode, supabase_url, supabase_service_key, openai_api_key, anthropic_api_key, google_api_key')
+    .select('openai_api_key, anthropic_api_key, google_api_key')
     .eq('id', userRow.company_id)
     .single();
 
   if (!companyRow) return null;
 
-  const dataClient = getDataClient({
-    mode: companyRow.mode,
-    supabase_url: companyRow.supabase_url,
-    supabase_service_key: companyRow.supabase_service_key,
-  });
-
-  // For hosted mode, filter by company_id; BYOS views have no company_id column
-  const companyId =
-    companyRow.mode === 'hosted' ? userRow.company_id : undefined;
-
-  const dashboardData = await fetchDashboardData(
-    dataClient,
-    companyId,
-    searchParams.month
-  );
+  const dashboardData = await fetchDashboardData(supabase, userRow.company_id, searchParams.month);
 
   if (dashboardData.availableMonths.length === 0) {
     return <DashboardEmptyState />;

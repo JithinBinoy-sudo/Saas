@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
-import { getDataClient } from '@/lib/getDataClient';
 import { buildReservationReport } from '@/lib/export/buildReservationReport';
 import type { SummaryRow, RawReservationRow } from '@/lib/export/types';
 
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
   const admin = createAppAdminClient();
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, mode, supabase_url, supabase_service_key')
+    .select('id, name')
     .eq('id', userRow.company_id)
     .single();
 
@@ -63,24 +62,17 @@ export async function GET(request: NextRequest) {
     filename = 'portlio-export.xlsx';
   }
 
-  // 3. Get data client
-  const dataClient = getDataClient({
-    mode: company.mode,
-    supabase_url: company.supabase_url,
-    supabase_service_key: company.supabase_service_key,
-  });
-
-  const companyId = company.mode === 'hosted' ? company.id : undefined;
+  const companyId = company.id;
 
   // If default month, find the most recent one
   if (summaryFilter.type === 'month' && summaryFilter.month === '') {
-    let q = dataClient
+    const { data: latest } = await admin
       .from('monthly_portfolio_summary')
       .select('revenue_month')
+      .eq('company_id', companyId)
       .order('revenue_month', { ascending: false })
-      .limit(1);
-    if (companyId) q = q.eq('company_id', companyId);
-    const { data: latest } = await q.single();
+      .limit(1)
+      .single();
     if (!latest) {
       return NextResponse.json({ error: 'No data available' }, { status: 404 });
     }
@@ -89,10 +81,10 @@ export async function GET(request: NextRequest) {
   }
 
   // 4. Query Summary (final_reporting_gold)
-  let summaryQuery = dataClient
+  let summaryQuery = admin
     .from('final_reporting_gold')
-    .select('revenue_month, listing_nickname, revenue, occupied_nights, adr, revenue_delta, portfolio_median_revenue');
-  if (companyId) summaryQuery = summaryQuery.eq('company_id', companyId);
+    .select('revenue_month, listing_nickname, revenue, occupied_nights, adr, revenue_delta, portfolio_median_revenue')
+    .eq('company_id', companyId);
 
   if (summaryFilter.type === 'month') {
     summaryQuery = summaryQuery.eq('revenue_month', summaryFilter.month);
@@ -113,10 +105,10 @@ export async function GET(request: NextRequest) {
   }));
 
   // 5. Query Raw Reservations
-  let resQuery = dataClient
+  let resQuery = admin
     .from('reservations')
-    .select('confirmation_code, listing_nickname, check_in_date, check_out_date, nights, net_accommodation_fare, listing_id, data');
-  if (companyId) resQuery = resQuery.eq('company_id', companyId);
+    .select('confirmation_code, listing_nickname, check_in_date, check_out_date, nights, net_accommodation_fare, listing_id, data')
+    .eq('company_id', companyId);
 
   if (summaryFilter.type === 'month') {
     // Filter by month — check_in_date in that month

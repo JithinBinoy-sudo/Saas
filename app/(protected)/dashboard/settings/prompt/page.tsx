@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
-import { getDataClient } from '@/lib/getDataClient';
 import { PromptConfigForm } from '@/components/settings/PromptConfigForm';
 import type { PromptConfig } from '@/components/settings/PromptConfigForm';
 import { PromptTestPanel } from '@/components/settings/PromptTestPanel';
@@ -44,32 +43,14 @@ export default async function PromptSettingsPage() {
 
   const promptConfig: PromptConfig = config ?? DEFAULTS;
 
-  // Fetch company for data client
-  const { data: company } = await admin
-    .from('companies')
-    .select('id, mode, supabase_url, supabase_service_key')
-    .eq('id', userRow.company_id)
-    .single();
-
   // Fetch available months
   let availableMonths: string[] = [];
-  if (company) {
-    const dataClient = getDataClient({
-      mode: company.mode,
-      supabase_url: company.supabase_url,
-      supabase_service_key: company.supabase_service_key,
-    });
-
-    const companyId = company.mode === 'hosted' ? company.id : undefined;
-    let query = dataClient
-      .from('monthly_portfolio_summary')
-      .select('revenue_month')
-      .order('revenue_month', { ascending: false });
-    if (companyId) query = query.eq('company_id', companyId);
-
-    const { data: months } = await query;
-    availableMonths = (months ?? []).map((m: { revenue_month: string }) => m.revenue_month);
-  }
+  const { data: months } = await admin
+    .from('monthly_portfolio_summary')
+    .select('revenue_month')
+    .eq('company_id', userRow.company_id)
+    .order('revenue_month', { ascending: false });
+  availableMonths = (months ?? []).map((m: { revenue_month: string }) => m.revenue_month);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">

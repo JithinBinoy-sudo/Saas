@@ -4,7 +4,7 @@
 
 /**
  * Pipeline run route tests.
- * Mocks: Supabase clients, provider adapters, encryption, getDataClient.
+ * Mocks: Supabase clients, provider adapters, encryption.
  */
 
 const mockGetUser = jest.fn();
@@ -18,11 +18,6 @@ jest.mock('@/lib/supabase/server', () => ({
 
 jest.mock('@/lib/encryption', () => ({
   decrypt: (val: string) => `decrypted-${val}`,
-}));
-
-const mockDataFrom = jest.fn();
-jest.mock('@/lib/getDataClient', () => ({
-  getDataClient: () => ({ from: mockDataFrom }),
 }));
 
 const mockChat = jest.fn();
@@ -91,7 +86,6 @@ describe('POST /api/pipeline/run', () => {
         openai_api_key: 'enc-oai',
         anthropic_api_key: null,
         google_api_key: null,
-        supabase_url: null, supabase_service_key: null,
       },
       error: null,
     }));

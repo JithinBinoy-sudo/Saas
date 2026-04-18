@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { createAppServerClient } from '@/lib/supabase/server';
-import { getDataClient } from '@/lib/getDataClient';
 import { fetchMonthlySummary } from '@/lib/analytics/queries';
 import { BriefingCard } from '@/components/pipeline/BriefingCard';
 
@@ -25,14 +24,6 @@ export default async function BriefingPage({
     .single();
 
   if (!userRow) return null;
-
-  const { data: companyRow } = await supabase
-    .from('companies')
-    .select('mode, supabase_url, supabase_service_key')
-    .eq('id', userRow.company_id)
-    .single();
-
-  if (!companyRow) return null;
 
   // Fetch briefing from app Supabase (always stored there)
   const { data: briefing } = await supabase
@@ -60,13 +51,7 @@ export default async function BriefingPage({
   }
 
   // Fetch KPI summary for sidebar context
-  const dataClient = getDataClient({
-    mode: companyRow.mode,
-    supabase_url: companyRow.supabase_url,
-    supabase_service_key: companyRow.supabase_service_key,
-  });
-  const companyId = companyRow.mode === 'hosted' ? userRow.company_id : undefined;
-  const summary = await fetchMonthlySummary(dataClient, params.month, companyId);
+  const summary = await fetchMonthlySummary(supabase, params.month, userRow.company_id);
 
   return (
     <div className="flex flex-col gap-6">

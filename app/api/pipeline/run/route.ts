@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
 import { decrypt } from '@/lib/encryption';
-import { getDataClient } from '@/lib/getDataClient';
 import { SUPPORTED_MODELS } from '@/lib/pipeline/types';
 import type { PipelineInput, PropertySummaryRow } from '@/lib/pipeline/types';
 import { inferProvider, getApiKeyForProvider } from '@/lib/pipeline/getProvider';
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
   // 5. Fetch company
   const { data: company, error: companyError } = await admin
     .from('companies')
-    .select('id, mode, openai_api_key, anthropic_api_key, google_api_key, supabase_url, supabase_service_key')
+    .select('id, mode, openai_api_key, anthropic_api_key, google_api_key')
     .eq('id', userRow.company_id)
     .single();
 
@@ -88,36 +87,28 @@ export async function POST(request: NextRequest) {
   const temperature = promptConfig?.temperature ?? 0.3;
   const maxTokens = promptConfig?.max_tokens ?? 2000;
 
-  // 8. Get data client
-  const dataClient = getDataClient({
-    mode: company.mode,
-    supabase_url: company.supabase_url,
-    supabase_service_key: company.supabase_service_key,
-  });
-
-  const companyId = company.mode === 'hosted' ? company.id : undefined;
+  const companyId = company.id;
 
   // 9. Fetch monthly summary
-  let summaryQuery = dataClient
+  const { data: summaryData, error: summaryError } = await admin
     .from('monthly_portfolio_summary')
     .select('*')
-    .eq('revenue_month', revenue_month);
-  if (companyId) summaryQuery = summaryQuery.eq('company_id', companyId);
-  const { data: summaryData, error: summaryError } = await summaryQuery.single();
+    .eq('revenue_month', revenue_month)
+    .eq('company_id', companyId)
+    .single();
 
   if (summaryError || !summaryData) {
     return NextResponse.json({ error: 'No data for requested month' }, { status: 404 });
   }
 
   // 10. Fetch top properties
-  let propsQuery = dataClient
+  const { data: propertyRows } = await admin
     .from('final_reporting_gold')
     .select('listing_id, listing_nickname, revenue, occupied_nights, adr, revenue_delta')
     .eq('revenue_month', revenue_month)
+    .eq('company_id', companyId)
     .order('revenue', { ascending: false })
     .limit(PROPERTY_CAP);
-  if (companyId) propsQuery = propsQuery.eq('company_id', companyId);
-  const { data: propertyRows } = await propsQuery;
 
   const properties: PropertySummaryRow[] = (propertyRows ?? []).map((r: Record<string, unknown>) => ({
     listing_id: r.listing_id as string,

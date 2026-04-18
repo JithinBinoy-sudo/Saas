@@ -130,18 +130,37 @@ export async function POST(request: Request) {
       supabase_service_key: company.supabase_service_key,
     });
 
-    const payload =
-      company.mode === 'hosted'
-        ? validRecords.map((r) => ({ ...r, company_id: companyId }))
-        : validRecords;
-    const onConflict =
-      company.mode === 'hosted' ? 'company_id,confirmation_code' : 'confirmation_code';
-
-    const { error } = await dataClient.from('reservations').upsert(payload, { onConflict });
-    if (error) {
-      upsertError = error.message;
+    if (company.mode === 'hosted') {
+      // Hosted: write directly to app DB
+      const payload = validRecords.map((r) => ({ ...r, company_id: companyId }));
+      const { error } = await dataClient.from('reservations').upsert(payload, {
+        onConflict: 'company_id,confirmation_code',
+      });
+      if (error) {
+        upsertError = error.message;
+      } else {
+        inserted = validRecords.length;
+      }
     } else {
-      inserted = validRecords.length;
+      // BYOS: write to company's Supabase first (source of truth)
+      const { error } = await dataClient.from('reservations').upsert(validRecords, {
+        onConflict: 'confirmation_code',
+      });
+      if (error) {
+        upsertError = error.message;
+      } else {
+        inserted = validRecords.length;
+
+        // Dual-write: also upsert into Portlio's app DB
+        const appPayload = validRecords.map((r) => ({ ...r, company_id: companyId }));
+        const { error: appError } = await admin.from('reservations').upsert(appPayload, {
+          onConflict: 'company_id,confirmation_code',
+        });
+        if (appError) {
+          // Log but don't fail — BYOS write succeeded, sync can recover
+          console.error('BYOS dual-write to app DB failed:', appError.message);
+        }
+      }
     }
   }
 

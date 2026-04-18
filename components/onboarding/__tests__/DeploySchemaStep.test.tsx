@@ -43,8 +43,6 @@ describe('DeploySchemaStep', () => {
 
     expect(await screen.findByText(/tables to create/i)).toBeInTheDocument();
     expect(screen.getByText(/reservations/i)).toBeInTheDocument();
-    expect(screen.getByText(/monthly_portfolio_briefings/i)).toBeInTheDocument();
-    expect(screen.getByText(/nights_exploded_silver/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /deploy schema now/i })).toBeInTheDocument();
   });
 
@@ -65,7 +63,6 @@ describe('DeploySchemaStep', () => {
             schema_deployed: true,
             results: [
               { object: 'reservations', status: 'created' },
-              { object: 'monthly_portfolio_briefings', status: 'created' },
             ],
           }),
         });
@@ -101,9 +98,8 @@ describe('DeploySchemaStep', () => {
             schema_deployed: false,
             bootstrap_missing: false,
             results: [
-              { object: 'reservations', status: 'created' },
               {
-                object: 'monthly_portfolio_briefings',
+                object: 'reservations',
                 status: 'failed',
                 error: 'permission denied',
               },

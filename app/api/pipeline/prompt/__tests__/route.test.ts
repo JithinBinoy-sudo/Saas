@@ -41,7 +41,7 @@ beforeEach(() => {
 describe('GET /api/pipeline/prompt', () => {
   it('returns 401 when not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
-    const res = await GET(makeGetRequest() as never);
+    const res = await GET();
     expect(res.status).toBe(401);
   });
 
@@ -52,7 +52,7 @@ describe('GET /api/pipeline/prompt', () => {
     // prompt_configs — not found
     mockAdminFrom.mockReturnValueOnce(mockQuery({ data: null, error: { code: 'PGRST116' } }));
 
-    const res = await GET(makeGetRequest() as never);
+    const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.model).toBe('gpt-4o');
@@ -77,7 +77,7 @@ describe('GET /api/pipeline/prompt', () => {
       error: null,
     }));
 
-    const res = await GET(makeGetRequest() as never);
+    const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.system_prompt).toBe('Custom system');

@@ -94,10 +94,10 @@ describe('fetchAvailableMonths', () => {
     expect(result).toEqual([]);
   });
 
-  it('works without companyId (BYOS mode)', async () => {
+  it('returns months for a specific company', async () => {
     const months = [{ revenue_month: '2026-03-01' }];
     const client = createChainMock(months);
-    const result = await fetchAvailableMonths(client);
+    const result = await fetchAvailableMonths(client, 'company-2');
     expect(result).toEqual(['2026-03-01']);
   });
 });
@@ -121,7 +121,7 @@ describe('fetchMonthlySummary', () => {
 
   it('returns null on error', async () => {
     const client = createChainMock(null, { message: 'not found' });
-    const result = await fetchMonthlySummary(client, '2026-03-01');
+    const result = await fetchMonthlySummary(client, '2026-03-01', 'company-1');
     expect(result).toBeNull();
   });
 });
@@ -143,7 +143,7 @@ describe('fetchTrendData', () => {
 
   it('returns empty array for empty months', async () => {
     const client = createChainMock([]);
-    const result = await fetchTrendData(client, []);
+    const result = await fetchTrendData(client, [], 'company-1');
     expect(result).toEqual([]);
   });
 });

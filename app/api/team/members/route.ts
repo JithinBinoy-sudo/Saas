@@ -47,7 +47,7 @@ export async function GET(_request: NextRequest) {
   }
 
   // 4. Resolve invited_by names
-  const inviterIds = [...new Set((rawInvites ?? []).map((i) => i.invited_by as string))];
+  const inviterIds = Array.from(new Set((rawInvites ?? []).map((i) => i.invited_by as string)));
 
   let inviterMap: Record<string, string> = {};
   if (inviterIds.length > 0) {

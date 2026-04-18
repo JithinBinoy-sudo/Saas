@@ -111,6 +111,12 @@ function setupAdminForCompany(
         })),
       };
     }
+    if (table === 'reservations') {
+      // BYOS dual-write to app DB
+      return {
+        upsert: jest.fn().mockResolvedValue({ error: null }),
+      };
+    }
     throw new Error(`unexpected admin table ${table}`);
   });
 

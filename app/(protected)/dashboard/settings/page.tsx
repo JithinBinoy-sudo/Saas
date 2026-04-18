@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createAppServerClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { SyncCard } from '@/components/settings/SyncCard';
 
 const SECTIONS = [
   {
@@ -31,11 +32,36 @@ export default async function SettingsPage() {
 
   const { data: userRow } = await supabase
     .from('users')
-    .select('role')
+    .select('role, company_id')
     .eq('id', user.id)
     .single();
 
   const role = userRow?.role ?? 'member';
+
+  // Check company mode for BYOS sync card
+  let companyMode: string | null = null;
+  let lastSync = null;
+
+  if (userRow?.company_id) {
+    const { data: companyRow } = await supabase
+      .from('companies')
+      .select('mode')
+      .eq('id', userRow.company_id)
+      .single();
+
+    companyMode = companyRow?.mode ?? null;
+
+    if (companyMode === 'byos') {
+      const { data: syncRun } = await supabase
+        .from('sync_runs')
+        .select('status, rows_synced, completed_at, started_at')
+        .eq('company_id', userRow.company_id)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      lastSync = syncRun;
+    }
+  }
 
   const visibleSections = SECTIONS.filter((s) => !s.adminOnly || role === 'admin');
 
@@ -65,6 +91,8 @@ export default async function SettingsPage() {
           </Link>
         ))}
       </div>
+
+      {companyMode === 'byos' && <SyncCard lastSync={lastSync} />}
     </div>
   );
 }

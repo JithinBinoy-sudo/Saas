@@ -84,17 +84,17 @@ Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase6-plan.md`
 ## Phase 7 — BYOS View Migration
 
 - [x] Task 1: DB Migration — `006_sync_runs.sql`
-- [ ] Task 2: Trim byos-ddl.ts
-- [ ] Task 3: Make companyId required in queries.ts
-- [ ] Task 4: Update Dashboard page to use app client
-- [ ] Task 5: Update Briefing page to use app client
-- [ ] Task 6: Update Export Settings to use app client
-- [ ] Task 7: Update Prompt Settings to use app client
-- [ ] Task 8: Update Pipeline route to use app client
-- [ ] Task 9: Update Export route to use app client
-- [ ] Task 10: Create Sync API route
-- [ ] Task 11: Add dual-write to Upload route
-- [ ] Task 12: Create SyncCard component
-- [ ] Task 13: Add SyncCard to Settings page
+- [x] Task 2: Trim byos-ddl.ts
+- [x] Task 3: Make companyId required in queries.ts
+- [x] Task 4: Update Dashboard page to use app client
+- [x] Task 5: Update Briefing page to use app client
+- [x] Task 6: Update Export Settings to use app client
+- [x] Task 7: Update Prompt Settings to use app client
+- [x] Task 8: Update Pipeline route to use app client
+- [x] Task 9: Update Export route to use app client
+- [x] Task 10: Create Sync API route
+- [x] Task 11: Add dual-write to Upload route
+- [x] Task 12: Create SyncCard component
+- [x] Task 13: Add SyncCard to Settings page
 
 Plan reference: `Docs/superpowers/specs/2026-04-18-byos-view-migration-design.md`

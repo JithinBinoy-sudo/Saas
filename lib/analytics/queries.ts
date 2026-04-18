@@ -8,18 +8,13 @@ import type {
 
 export async function fetchAvailableMonths(
   client: SupabaseClient,
-  companyId?: string
+  companyId: string
 ): Promise<string[]> {
-  let query = client
+  const { data, error } = await client
     .from('monthly_portfolio_summary')
     .select('revenue_month')
+    .eq('company_id', companyId)
     .order('revenue_month', { ascending: false });
-
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
-
-  const { data, error } = await query;
 
   if (error || !data) return [];
   return data.map((r: { revenue_month: string }) => r.revenue_month);
@@ -28,18 +23,14 @@ export async function fetchAvailableMonths(
 export async function fetchMonthlySummary(
   client: SupabaseClient,
   month: string,
-  companyId?: string
+  companyId: string
 ): Promise<MonthlyPortfolioSummary | null> {
-  let query = client
+  const { data, error } = await client
     .from('monthly_portfolio_summary')
     .select('*')
-    .eq('revenue_month', month);
-
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
-
-  const { data, error } = await query.single();
+    .eq('revenue_month', month)
+    .eq('company_id', companyId)
+    .single();
 
   if (error || !data) return null;
   return data as MonthlyPortfolioSummary;
@@ -48,22 +39,17 @@ export async function fetchMonthlySummary(
 export async function fetchTrendData(
   client: SupabaseClient,
   months: string[],
-  companyId?: string
+  companyId: string
 ): Promise<MonthlyPortfolioSummary[]> {
   const last12 = months.slice(0, 12);
   if (last12.length === 0) return [];
 
-  let query = client
+  const { data, error } = await client
     .from('monthly_portfolio_summary')
     .select('*')
     .in('revenue_month', last12)
+    .eq('company_id', companyId)
     .order('revenue_month', { ascending: true });
-
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
-
-  const { data, error } = await query;
 
   if (error || !data) return [];
   return data as MonthlyPortfolioSummary[];
@@ -72,19 +58,14 @@ export async function fetchTrendData(
 export async function fetchPropertyRows(
   client: SupabaseClient,
   month: string,
-  companyId?: string
+  companyId: string
 ): Promise<PropertyMonthRow[]> {
-  let query = client
+  const { data, error } = await client
     .from('final_reporting_gold')
     .select('*')
     .eq('revenue_month', month)
+    .eq('company_id', companyId)
     .order('revenue', { ascending: false });
-
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
-
-  const { data, error } = await query;
 
   if (error || !data) return [];
   return data as PropertyMonthRow[];
@@ -92,18 +73,13 @@ export async function fetchPropertyRows(
 
 export async function fetchChannelMix(
   client: SupabaseClient,
-  companyId?: string
+  companyId: string
 ): Promise<ChannelMixRow[]> {
-  let query = client
+  const { data, error } = await client
     .from('channel_mix_summary')
     .select('*')
+    .eq('company_id', companyId)
     .order('total_revenue', { ascending: false });
-
-  if (companyId) {
-    query = query.eq('company_id', companyId);
-  }
-
-  const { data, error } = await query;
 
   if (error || !data) return [];
   return data as ChannelMixRow[];
@@ -112,7 +88,7 @@ export async function fetchChannelMix(
 /** Convenience: fetch everything the dashboard needs in parallel. */
 export async function fetchDashboardData(
   client: SupabaseClient,
-  companyId?: string,
+  companyId: string,
   requestedMonth?: string
 ): Promise<DashboardData> {
   const availableMonths = await fetchAvailableMonths(client, companyId);

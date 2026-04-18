@@ -9,7 +9,9 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function isAdminPath(pathname: string): boolean {
-  return pathname === '/admin' || pathname.startsWith('/admin/');
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
+  if (pathname === '/dashboard/settings/team' || pathname.startsWith('/dashboard/settings/team/')) return true;
+  return false;
 }
 
 function redirect(request: NextRequest, target: string): NextResponse {

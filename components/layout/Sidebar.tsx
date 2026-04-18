@@ -25,12 +25,14 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/reports', label: 'Reports' },
   { href: '/dashboard/upload', label: 'Upload' },
   { href: '/dashboard/upload/history', label: 'Upload History' },
+  { href: '/dashboard/history', label: 'History' },
 ];
 
 const SETTINGS_ITEMS: NavItem[] = [
   { href: '/dashboard/settings', label: 'Settings' },
   { href: '/dashboard/settings/prompt', label: 'AI Prompt', adminOnly: true },
   { href: '/dashboard/settings/export', label: 'Export Data' },
+  { href: '/dashboard/settings/team', label: 'Team', adminOnly: true },
   { href: '/admin', label: 'Admin', adminOnly: true },
 ];
 

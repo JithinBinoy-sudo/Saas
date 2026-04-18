@@ -16,6 +16,12 @@ const SECTIONS = [
     href: '/dashboard/settings/export',
     adminOnly: false,
   },
+  {
+    title: 'Team',
+    description: 'Invite team members and manage roles.',
+    href: '/dashboard/settings/team',
+    adminOnly: true,
+  },
 ];
 
 export default async function SettingsPage() {

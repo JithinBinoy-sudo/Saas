@@ -70,5 +70,31 @@ Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase4-plan.md`
 
 Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase5-plan.md`
 
+## Phase 6 — Pipeline Run History & Multi-User Invite
 
+- [x] Task 41: DB Migration — `invitations` table (`006_invitations.sql`)
+- [x] Task 42: Team API Routes — `POST /api/team/invite`, `GET /api/team/members`, `PATCH + DELETE /api/team/members/[id]`
+- [x] Task 43: Auth Callback — invite token branch (link new user to company, skip onboarding)
+- [x] Task 44: Pipeline Run History Page (`/dashboard/history`) — paginated table, duration, re-run, auto-poll
+- [x] Task 45: Team Management UI (`/dashboard/settings/team`) — `InviteForm`, `TeamMemberTable` (role change, revoke, resend/cancel invite)
+- [x] Task 46: Sidebar (History + Team nav items), middleware admin guard, full end-to-end verification
 
+Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase6-plan.md`
+
+## Phase 7 — BYOS View Migration
+
+- [x] Task 1: DB Migration — `006_sync_runs.sql`
+- [ ] Task 2: Trim byos-ddl.ts
+- [ ] Task 3: Make companyId required in queries.ts
+- [ ] Task 4: Update Dashboard page to use app client
+- [ ] Task 5: Update Briefing page to use app client
+- [ ] Task 6: Update Export Settings to use app client
+- [ ] Task 7: Update Prompt Settings to use app client
+- [ ] Task 8: Update Pipeline route to use app client
+- [ ] Task 9: Update Export route to use app client
+- [ ] Task 10: Create Sync API route
+- [ ] Task 11: Add dual-write to Upload route
+- [ ] Task 12: Create SyncCard component
+- [ ] Task 13: Add SyncCard to Settings page
+
+Plan reference: `Docs/superpowers/specs/2026-04-18-byos-view-migration-design.md`

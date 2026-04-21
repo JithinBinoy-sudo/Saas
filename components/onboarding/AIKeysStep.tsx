@@ -1,10 +1,19 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
+import Link from 'next/link';
+import {
+  ChevronDown,
+  ClipboardCheck,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Save,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 type ProviderKey = 'openai' | 'anthropic' | 'google';
 
@@ -15,10 +24,31 @@ type ProviderState = {
   saved: boolean;
 };
 
-const PROVIDERS: { id: ProviderKey; label: string; placeholder: string }[] = [
-  { id: 'openai', label: 'OpenAI', placeholder: 'sk-...' },
-  { id: 'anthropic', label: 'Claude', placeholder: 'sk-ant-...' },
-  { id: 'google', label: 'Gemini', placeholder: 'AIza...' },
+const PROVIDERS: {
+  id: ProviderKey;
+  /** Shown in the pill dropdown */
+  selectLabel: string;
+  placeholder: string;
+  getKeyUrl: string;
+}[] = [
+  {
+    id: 'openai',
+    selectLabel: 'OpenAI — GPT-4o family (Recommended)',
+    placeholder: 'sk-...',
+    getKeyUrl: 'https://platform.openai.com/api-keys',
+  },
+  {
+    id: 'anthropic',
+    selectLabel: 'Claude (Anthropic)',
+    placeholder: 'sk-ant-...',
+    getKeyUrl: 'https://console.anthropic.com/settings/keys',
+  },
+  {
+    id: 'google',
+    selectLabel: 'Gemini (Google AI Studio)',
+    placeholder: 'AIza...',
+    getKeyUrl: 'https://aistudio.google.com/apikey',
+  },
 ];
 
 const INITIAL_STATE: ProviderState = {
@@ -28,11 +58,23 @@ const INITIAL_STATE: ProviderState = {
   saved: false,
 };
 
+/** Light grey pills — aligned with onboarding glass / zinc surfaces */
+const pillSelect =
+  'h-12 w-full cursor-pointer appearance-none rounded-full border border-white/[0.14] bg-zinc-600/35 px-4 pr-11 text-sm text-white shadow-none outline-none transition-colors hover:bg-zinc-600/45 focus:border-white/25 focus:bg-zinc-600/40 focus:ring-2 focus:ring-blue-500/25 [&>option]:bg-zinc-800 [&>option]:text-white';
+
+const pillInput =
+  'h-12 w-full rounded-full border border-white/[0.14] bg-zinc-600/35 px-4 text-sm text-white shadow-none outline-none transition-colors placeholder:text-white/45 focus:border-white/25 focus:bg-zinc-600/40 focus:ring-2 focus:ring-blue-500/25';
+
 type Props = {
-  onComplete: (keys: Partial<Record<ProviderKey, string>>) => void;
+  onBack: () => void | Promise<void>;
+  onComplete: (keys: Partial<Record<ProviderKey, string>>) => void | Promise<void>;
 };
 
-export function AIKeysStep({ onComplete }: Props) {
+export function AIKeysStep({ onBack, onComplete }: Props) {
+  const selectId = useId();
+  const keyInputId = useId();
+  const [selectedProvider, setSelectedProvider] = useState<ProviderKey>('openai');
+  const [showKey, setShowKey] = useState(false);
   const [providers, setProviders] = useState<Record<ProviderKey, ProviderState>>({
     openai: { ...INITIAL_STATE },
     anthropic: { ...INITIAL_STATE },
@@ -68,7 +110,7 @@ export function AIKeysStep({ onComplete }: Props) {
     const state = providers[id];
     if (state.status !== 'valid') return;
 
-    updateProvider(id, { status: 'testing' }); // reuse testing state for save spinner
+    updateProvider(id, { status: 'testing' });
     try {
       const res = await fetch('/api/onboarding/ai-keys', {
         method: 'POST',
@@ -92,90 +134,175 @@ export function AIKeysStep({ onComplete }: Props) {
 
   const anySaved = Object.values(providers).some((p) => p.saved);
 
-  function handleContinue() {
+  async function handleContinue() {
     const keys: Partial<Record<ProviderKey, string>> = {};
     for (const p of PROVIDERS) {
       if (providers[p.id].saved) keys[p.id] = providers[p.id].key;
     }
-    onComplete(keys);
+    await onComplete(keys);
   }
 
+  const active = PROVIDERS.find((p) => p.id === selectedProvider)!;
+  const state = providers[active.id];
+  const canTest = state.key.trim().length > 0 && state.status !== 'testing';
+  const canSave = state.status === 'valid' && !state.saved;
+  const isBusy = state.status === 'testing';
+
   return (
-    <div className="flex flex-col gap-4">
-      <Tabs defaultValue={0}>
-        <TabsList>
-          {PROVIDERS.map((p, i) => (
-            <TabsTrigger key={p.id} value={i}>
-              {p.label}
-              {providers[p.id].saved && <span className="ml-1 text-green-500">✓</span>}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <div className="w-full max-w-[680px]">
+      <div
+        className={cn(
+          'rounded-[28px] border border-white/[0.08] bg-[#161618] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]',
+          'ring-1 ring-white/[0.06]'
+        )}
+      >
+        <div className="flex flex-col gap-8">
+          {/* Select provider — mirrors “Select AI Model” block */}
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor={selectId} className="text-[15px] font-medium tracking-tight text-white">
+              Select AI provider
+            </Label>
+            <div className="relative">
+              <select
+                id={selectId}
+                value={selectedProvider}
+                onChange={(e) => {
+                  setSelectedProvider(e.target.value as ProviderKey);
+                  setShowKey(false);
+                }}
+                className={pillSelect}
+              >
+                {PROVIDERS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.selectLabel}
+                    {providers[p.id].saved ? ' · saved' : ''}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-white/45"
+              />
+            </div>
+          </div>
 
-        {PROVIDERS.map((p, i) => {
-          const state = providers[p.id];
-          const canTest = state.key.trim().length > 0 && state.status !== 'testing';
-          const canSave = state.status === 'valid' && !state.saved;
+          {/* API key — mirrors reference API Key block */}
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor={keyInputId} className="text-[15px] font-medium tracking-tight text-white">
+                API Key
+              </Label>
+              <Link
+                href={active.getKeyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
+              >
+                Get key
+                <ExternalLink className="size-3.5 shrink-0 opacity-90" aria-hidden />
+              </Link>
+            </div>
 
-          return (
-            <TabsContent key={p.id} value={i}>
-              <div className="flex flex-col gap-4 pt-4">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={`${p.id}-key`}>{p.label} API Key</Label>
-                  <Input
-                    id={`${p.id}-key`}
-                    type="password"
-                    placeholder={p.placeholder}
-                    value={state.key}
-                    onChange={(e) => handleKeyChange(p.id, e.target.value)}
-                    disabled={state.status === 'testing'}
-                  />
-                </div>
+            <div className="relative">
+              <KeyRound
+                className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-white/35"
+                aria-hidden
+              />
+              <input
+                key={active.id}
+                id={keyInputId}
+                type={showKey ? 'text' : 'password'}
+                autoComplete="off"
+                placeholder={active.placeholder}
+                value={state.key}
+                onChange={(e) => handleKeyChange(active.id, e.target.value)}
+                disabled={isBusy}
+                className={cn(pillInput, 'pl-11 pr-12 font-mono text-[13px] tracking-tight')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey((v) => !v)}
+                className="absolute right-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-white/5 hover:text-white/80"
+                aria-label={showKey ? 'Hide API key' : 'Show API key'}
+              >
+                {showKey ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+              </button>
+            </div>
 
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleValidate(p.id)}
-                    disabled={!canTest}
-                  >
-                    {state.status === 'testing' ? 'Validating…' : 'Validate'}
-                  </Button>
+            <p className="text-[13px] leading-relaxed text-white/45">
+              Your key is encrypted locally and never stored on our servers.
+            </p>
+          </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSave(p.id)}
-                    disabled={!canSave}
-                  >
-                    Save
-                  </Button>
+          {/* Primary actions — Validate + Save Key */}
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleValidate(active.id)}
+                disabled={!canTest}
+                className={cn(
+                  'inline-flex h-12 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white transition-colors',
+                  'bg-[#2a2a2e] hover:bg-[#34343a]',
+                  (!canTest || isBusy) && 'pointer-events-none opacity-45'
+                )}
+              >
+                <ClipboardCheck className="size-[18px] shrink-0 text-white/90" aria-hidden />
+                {isBusy ? 'Validating…' : 'Validate'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave(active.id)}
+                disabled={!canSave || isBusy}
+                className={cn(
+                  'inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-semibold transition-colors',
+                  'bg-[#2a2a2e] text-white hover:bg-[#34343a]',
+                  (!canSave || isBusy) && 'pointer-events-none opacity-45'
+                )}
+              >
+                <Save className="size-[18px] shrink-0 text-blue-400" aria-hidden />
+                Save Key
+              </button>
+            </div>
 
-                  {state.status === 'valid' && state.saved && (
-                    <span className="text-sm font-medium text-green-600">✓ Saved</span>
-                  )}
-                  {state.status === 'valid' && !state.saved && (
-                    <span className="text-sm font-medium text-green-600">✓ Valid</span>
-                  )}
-                  {state.status === 'error' && state.error && (
-                    <span className="text-sm font-medium text-destructive">{state.error}</span>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+            {state.status === 'valid' && state.saved && (
+              <p className="text-center text-sm font-medium text-emerald-400/95">Saved for this provider</p>
+            )}
+            {state.status === 'valid' && !state.saved && (
+              <p className="text-center text-sm font-medium text-emerald-400/95">Valid — save to store</p>
+            )}
+            {state.status === 'error' && state.error && (
+              <p className="text-center text-sm font-medium text-red-300/95">{state.error}</p>
+            )}
+          </div>
 
-      <p className="text-xs text-slate-500">
-        At least one provider key is required to continue. Keys are encrypted before storage.
-      </p>
+          <p className="border-t border-white/[0.06] pt-6 text-center text-[12px] leading-relaxed text-white/40">
+            Add at least one provider key to continue. Keys are encrypted before storage in Portlio.
+          </p>
+        </div>
+      </div>
 
-      <Button type="button" disabled={!anySaved} onClick={handleContinue}>
-        Continue
-      </Button>
+      <div className="mt-8 flex items-center justify-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          className="h-11 rounded-full border-white/10 bg-transparent px-6 text-sm font-medium text-white/80 hover:bg-white/5 hover:text-white"
+        >
+          Back
+        </Button>
+        <Button
+          type="button"
+          disabled={!anySaved}
+          onClick={handleContinue}
+          className={cn(
+            'h-11 rounded-full bg-blue-300 px-8 text-sm font-semibold text-slate-950 hover:bg-blue-200',
+            !anySaved && 'opacity-45 hover:bg-blue-300'
+          )}
+        >
+          Continue to Next Step
+        </Button>
+      </div>
     </div>
   );
 }

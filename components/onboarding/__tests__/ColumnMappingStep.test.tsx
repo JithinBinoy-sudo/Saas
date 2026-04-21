@@ -70,13 +70,13 @@ async function uploadFile(headers: string[]) {
 
 describe('ColumnMappingStep', () => {
   it('renders sample preview and Download Sample Excel link before upload', () => {
-    render(<ColumnMappingStep mode="hosted" onComplete={() => {}} />);
+    render(<ColumnMappingStep mode="hosted" onBack={() => {}} onComplete={() => {}} />);
     expect(screen.getByText(/download sample excel/i)).toBeInTheDocument();
     expect(screen.getByText(/confirmation code/i)).toBeInTheDocument();
   });
 
   it('renders a mapping row for each detected Excel header', async () => {
-    render(<ColumnMappingStep mode="hosted" onComplete={() => {}} />);
+    render(<ColumnMappingStep mode="hosted" onBack={() => {}} onComplete={() => {}} />);
     await uploadFile(['Booking Ref', 'Property', 'Check In', 'Guest Name']);
     expect(screen.getByTestId('mapping-row-Booking Ref')).toBeInTheDocument();
     expect(screen.getByTestId('mapping-row-Property')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('ColumnMappingStep', () => {
   });
 
   it('removes a required field from other dropdowns once selected', async () => {
-    render(<ColumnMappingStep mode="hosted" onComplete={() => {}} />);
+    render(<ColumnMappingStep mode="hosted" onBack={() => {}} onComplete={() => {}} />);
     await uploadFile(['Header A', 'Header B']);
 
     const rowA = screen.getByTestId('mapping-row-Header A');
@@ -103,14 +103,14 @@ describe('ColumnMappingStep', () => {
   });
 
   it('disables Continue until all 7 required fields mapped', async () => {
-    render(<ColumnMappingStep mode="hosted" onComplete={() => {}} />);
+    render(<ColumnMappingStep mode="hosted" onBack={() => {}} onComplete={() => {}} />);
     await uploadFile(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7']);
     const continueBtn = screen.getByRole('button', { name: /continue/i });
     expect(continueBtn).toBeDisabled();
   });
 
   it('shows per-field errors when attempting to continue with missing required fields', async () => {
-    render(<ColumnMappingStep mode="hosted" onComplete={() => {}} />);
+    render(<ColumnMappingStep mode="hosted" onBack={() => {}} onComplete={() => {}} />);
     await uploadFile(['H1']);
     // Map H1 to one required field, leaving 6 unmapped.
     const row = screen.getByTestId('mapping-row-H1');
@@ -131,7 +131,7 @@ describe('ColumnMappingStep', () => {
       json: async () => ({ schema_deployed: true }),
     });
     const onComplete = jest.fn();
-    render(<ColumnMappingStep mode="hosted" onComplete={onComplete} />);
+    render(<ColumnMappingStep mode="hosted" onBack={() => {}} onComplete={onComplete} />);
 
     const headers = [
       'Confirmation Code',

@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
   const { data: companyRow, error: companyFetchError } = await adminClient
     .from('companies')
-    .select('mode, schema_deployed')
+    .select('mode, schema_deployed, onboarding_wizard_mode')
     .eq('id', companyId)
     .single();
 
@@ -106,16 +106,32 @@ export async function POST(request: Request) {
 
   let schemaDeployed = Boolean(companyRow.schema_deployed);
 
-  if (companyRow.mode === 'hosted') {
+  const row = companyRow as {
+    mode: string;
+    schema_deployed: boolean;
+    onboarding_wizard_mode?: string | null;
+  };
+  const effectiveMode = row.onboarding_wizard_mode ?? row.mode;
+  const nextStep = effectiveMode === 'byos' ? 4 : 3;
+
+  if (effectiveMode === 'hosted') {
     const { error: updateError } = await adminClient
       .from('companies')
-      .update({ schema_deployed: true })
+      .update({ onboarding_wizard_step: nextStep, schema_deployed: true })
       .eq('id', companyId);
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
     schemaDeployed = true;
     await seedPromptConfigIfMissing(companyId, adminClient);
+  } else {
+    const { error: updateError } = await adminClient
+      .from('companies')
+      .update({ onboarding_wizard_step: nextStep })
+      .eq('id', companyId);
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ schema_deployed: schemaDeployed }, { status: 200 });

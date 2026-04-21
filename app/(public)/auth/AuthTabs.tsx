@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 
@@ -11,18 +10,40 @@ export function AuthTabs() {
   const initial = params.get('tab') === 'signup' ? 'signup' : 'login';
   const [value, setValue] = useState<string>(initial);
 
+  const toggleMode = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setValue(value === 'login' ? 'signup' : 'login');
+  };
+
   return (
-    <Tabs value={value} onValueChange={(v) => setValue(String(v))} className="w-full">
-      <TabsList className="w-full">
-        <TabsTrigger value="login">Log in</TabsTrigger>
-        <TabsTrigger value="signup">Sign up</TabsTrigger>
-      </TabsList>
-      <TabsContent value="login" className="pt-4">
-        <LoginForm />
-      </TabsContent>
-      <TabsContent value="signup" className="pt-4">
-        <SignupForm />
-      </TabsContent>
-    </Tabs>
+    <div className="w-full">
+      <div className="pt-2">
+        {value === 'login' ? <LoginForm /> : <SignupForm />}
+      </div>
+      
+      <div className="mt-8 text-center text-xs text-on-surface-variant">
+        {value === 'login' ? (
+          <>
+            Don&apos;t have an account?{' '}
+            <button
+              onClick={toggleMode}
+              className="text-primary hover:text-white transition-colors border-none bg-transparent"
+            >
+              Request Access
+            </button>
+          </>
+        ) : (
+          <>
+            Already have an account?{' '}
+            <button
+              onClick={toggleMode}
+              className="text-primary hover:text-white transition-colors border-none bg-transparent"
+            >
+              Log in
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

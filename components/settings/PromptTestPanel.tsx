@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 // Per-1K-token pricing (USD)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
@@ -80,29 +81,39 @@ export function PromptTestPanel({ model, availableMonths }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-sm font-medium">Test Prompt</h3>
-      <p className="text-xs text-muted-foreground">
+      <div>
+        <h3 className="text-sm font-medium text-white">Test Prompt</h3>
+        <p className="mt-1 text-xs text-white/60">
         Run a test with the current prompt settings. No briefing will be saved.
-      </p>
+        </p>
+      </div>
 
-      <div className="flex items-center gap-3">
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="rounded-md border bg-transparent px-3 py-1.5 text-sm"
-          disabled={availableMonths.length === 0}
-        >
-          {availableMonths.length === 0 && <option value="">No data available</option>}
-          {availableMonths.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+      <div className="grid grid-cols-[1fr_auto] gap-3 w-full max-w-[340px]">
+        <div className="relative">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="appearance-none w-full h-8 rounded-xl border border-white/10 bg-black/20 px-3 pr-9 text-sm text-white/85"
+            disabled={availableMonths.length === 0}
+          >
+            {availableMonths.length === 0 && <option value="">No data available</option>}
+            {availableMonths.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <span
+            aria-hidden
+            className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-white/60"
+          >
+            expand_more
+          </span>
+        </div>
 
         <Button
-          size="sm"
           variant="outline"
           onClick={handleTest}
           disabled={state === 'loading' || !selectedMonth}
+          className="rounded-xl border-white/10 bg-black/20 text-white/85 hover:bg-white/5"
         >
           {state === 'loading' ? (
             <span className="flex items-center gap-1">
@@ -120,30 +131,37 @@ export function PromptTestPanel({ model, availableMonths }: Props) {
       )}
 
       {result && (
-        <Card>
-          <CardHeader className="cursor-pointer" onClick={() => setCollapsed(!collapsed)}>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Test Result</CardTitle>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <Card className="ghost-border overflow-hidden rounded-3xl bg-white/5 backdrop-blur-xl ring-1 ring-white/10">
+          <CardHeader
+            className="cursor-pointer"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-sm text-white">Test Result</CardTitle>
+              <div className="flex items-center gap-2 text-xs text-white/60">
                 <span>
-                  {result.prompt_tokens + result.completion_tokens} tokens
-                  ({result.prompt_tokens} in / {result.completion_tokens} out)
+                  {result.prompt_tokens + result.completion_tokens} tokens ({result.prompt_tokens} in /{' '}
+                  {result.completion_tokens} out)
                 </span>
-                {estimateCost(result.model, result.prompt_tokens, result.completion_tokens) && (
-                  <span className="text-muted-foreground">
-                    {estimateCost(result.model, result.prompt_tokens, result.completion_tokens)}
-                  </span>
-                )}
-                <span className="text-[10px]">{collapsed ? '▼' : '▲'}</span>
+                {estimateCost(result.model, result.prompt_tokens, result.completion_tokens) ? (
+                  <span>{estimateCost(result.model, result.prompt_tokens, result.completion_tokens)}</span>
+                ) : null}
+                <span className="material-symbols-outlined text-[18px] text-white/60">
+                  {collapsed ? 'arrow_drop_down' : 'arrow_drop_up'}
+                </span>
               </div>
             </div>
           </CardHeader>
           {!collapsed && (
             <CardContent>
-              <div className="whitespace-pre-wrap rounded-md bg-muted/50 p-4 text-sm leading-relaxed">
+              <div
+                className={cn(
+                  'max-h-[520px] overflow-auto whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-sm text-white/85 leading-relaxed',
+                )}
+              >
                 {result.briefing_text}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-white/60">
                 This is a test run. No briefing was saved.
               </p>
             </CardContent>

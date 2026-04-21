@@ -6,9 +6,14 @@ const INPUT: PipelineInput = {
   revenue_month: '2026-03-01',
   property_count: 3,
   total_revenue: 5000,
+  avg_revenue: 1666.67,
+  min_revenue: 1000,
+  max_revenue: 2500,
   portfolio_adr: 250,
   total_nights: 20,
   properties: [],
+  properties_data: [],
+  channel_mix: [],
 };
 
 describe('computeHash', () => {

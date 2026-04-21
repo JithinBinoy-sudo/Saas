@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Portlio Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-dim": "#699cff",
+                        "surface-bright": "#2c2c2f",
+                        "inverse-primary": "#005bc4",
+                        "outline": "#767577",
+                        "error-dim": "#d73357",
+                        "on-tertiary-container": "#004050",
+                        "on-tertiary": "#004a5d",
+                        "on-background": "#f9f5f8",
+                        "inverse-surface": "#fcf8fb",
+                        "tertiary-dim": "#00c0ea",
+                        "secondary-dim": "#9c48ea",
+                        "secondary-fixed-dim": "#dbb4ff",
+                        "primary-fixed-dim": "#5391ff",
+                        "on-tertiary-fixed": "#002a35",
+                        "on-secondary-fixed": "#4f0089",
+                        "on-secondary-fixed-variant": "#7511c3",
+                        "background": "#0e0e10",
+                        "secondary-fixed": "#e5c6ff",
+                        "on-surface": "#f9f5f8",
+                        "tertiary-fixed-dim": "#00c0ea",
+                        "on-surface-variant": "#adaaad",
+                        "on-secondary": "#33005b",
+                        "surface-container": "#19191c",
+                        "tertiary-container": "#00cffc",
+                        "tertiary-fixed": "#00cffc",
+                        "on-primary-fixed": "#000000",
+                        "surface-variant": "#262528",
+                        "error": "#ff6e84",
+                        "surface-container-lowest": "#000000",
+                        "secondary-container": "#6f00be",
+                        "surface": "#0e0e10",
+                        "surface-container-low": "#131315",
+                        "on-error": "#490013",
+                        "on-primary-container": "#002150",
+                        "surface-tint": "#85adff",
+                        "outline-variant": "#48474a",
+                        "surface-dim": "#0e0e10",
+                        "on-tertiary-fixed-variant": "#004a5c",
+                        "on-secondary-container": "#e9cdff",
+                        "error-container": "#a70138",
+                        "surface-container-high": "#1f1f22",
+                        "primary": "#85adff",
+                        "on-primary-fixed-variant": "#002a62",
+                        "primary-fixed": "#6e9fff",
+                        "inverse-on-surface": "#565457",
+                        "on-primary": "#002c66",
+                        "surface-container-highest": "#262528",
+                        "on-error-container": "#ffb2b9",
+                        "primary-container": "#6e9fff",
+                        "tertiary": "#69daff",
+                        "secondary": "#c180ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .ghost-border {
+            position: relative;
+        }
+        .ghost-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(72, 71, 74, 0.15));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .glow-point {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 110, 132, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 110, 132, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 110, 132, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased overflow-x-hidden min-h-screen">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-64 border-r border-white/5 bg-zinc-950/80 backdrop-blur-xl shadow-[0px_20px_40px_rgba(0,0,0,0.4)] flex flex-col h-full p-6 z-50">
+<div class="mb-10 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-on-primary-fixed font-bold text-lg">P</div>
+<div>
+<h1 class="text-2xl font-black bg-gradient-to-br from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">Portlio</h1>
+<p class="text-xs text-on-surface-variant font-medium tracking-wide uppercase">PropTech Analytics</p>
+</div>
+</div>
+<ul class="flex flex-col gap-2 font-['Inter'] tracking-tight text-sm font-medium">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 bg-white/5 text-white ring-1 ring-white/10 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                    Dashboard
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:bg-white/5 hover:text-white transition-all duration-200 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">table_chart</span>
+                    Spreadsheet
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:bg-white/5 hover:text-white transition-all duration-200 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">database</span>
+                    Database
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:bg-white/5 hover:text-white transition-all duration-200 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+                    AI Intelligence
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:bg-white/5 hover:text-white transition-all duration-200 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">group</span>
+                    Users
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:bg-white/5 hover:text-white transition-all duration-200 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+                    Admin
+                </a>
+</li><li>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:bg-white/5 hover:text-white transition-all duration-200 rounded-xl active:scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</li>
+</ul>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 z-40 bg-zinc-950/40 backdrop-blur-md flex items-center justify-between px-8">
+<div class="hidden">Portlio</div> <!-- Hidden Brand Logo as per JSON -->
+<div class="flex-1"></div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-800/50 hover:text-white transition-all hover:shadow-[0_0_8px_rgba(133,173,255,0.4)]">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="Close up portrait of a professional man in a dark suite against a dark neutral background, soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfvLTuA2QooxUELKnoOhdiEmhjf9HD_UK5B8or9zaVyfMHS4dC1I8oGIvQtOjFQWZ4YZKEtGoLTmM1sif9P0T7fnNPQLojCxtAwdZF8OBtzKqLaV_jLwP3E_XaIznTyTEhkJbUXR3Dj1PL7k0TqnTtyW4r7D0l3KX2m2I3y-ImUcpS_PpzKVqt9L8tWJuRqQux_N9PuMe-9XJg40XBjVkeg4AC4MOYL3LjDjtRKk6l3ESnMqY93rrwbzrGqVeRQvzZTxbj16y5njY"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 p-8 min-h-screen">
+<!-- Search and Top Right Stats (Moved to top right of layout but structured here for masonry flow) -->
+<div class="w-full flex justify-end mb-8 gap-4">
+<div class="relative w-72">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">search</span>
+</div>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-full py-2.5 pl-10 pr-4 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all shadow-[0px_4px_20px_rgba(0,0,0,0.2)]" placeholder="Search properties..." type="text"/>
+</div>
+</div>
+<!-- Masonry Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Card 1: Portfolio Performance -->
+<div class="col-span-8 bg-surface-container/60 backdrop-blur-xl rounded-xl ghost-border overflow-hidden relative shadow-[0px_20px_40px_rgba(0,0,0,0.4)]">
+<!-- Ambient Glow Behind Content -->
+<div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="p-8 pb-0">
+<div class="flex items-center justify-between mb-8">
+<div class="flex gap-6 border-b border-white/5 pb-2">
+<button class="text-on-surface font-semibold text-sm border-b-2 border-primary pb-2 -mb-[9px]">Total Revenue</button>
+<button class="text-on-surface-variant hover:text-on-surface text-sm transition-colors pb-2">Occupancy Rate</button>
+<button class="text-on-surface-variant hover:text-on-surface text-sm transition-colors pb-2">ADR</button>
+</div>
+<span class="text-xs text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">Last synced 2 hours ago</span>
+</div>
+<div class="mb-12">
+<h2 class="text-on-surface-variant text-sm uppercase tracking-wider mb-2">Portfolio Performance</h2>
+<div class="flex items-end gap-4">
+<span class="text-6xl font-headline font-semibold tracking-tight text-on-surface">$142,500</span>
+<span class="bg-tertiary/10 text-tertiary text-sm font-medium px-2 py-1 rounded-md mb-2 flex items-center gap-1 border border-tertiary/20">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +12.5% M/M
+                            </span>
+</div>
+</div>
+</div>
+<!-- Visualization Area (Simulated Chart) -->
+<div class="h-48 w-full relative mt-auto border-t border-white/5 bg-gradient-to-t from-primary/5 to-transparent">
+<!-- SVG Chart Path Simulation -->
+<svg class="w-full h-full absolute bottom-0 left-0" preserveaspectratio="none" viewbox="0 0 1000 200">
+<defs>
+<lineargradient id="wave-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#85adff" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#85adff" stop-opacity="0"></stop>
+</lineargradient>
+<filter id="glow">
+<fegaussianblur result="coloredBlur" stddeviation="4"></fegaussianblur>
+<femerge>
+<femergenode in="coloredBlur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+</defs>
+<!-- Area Fill -->
+<path d="M0,150 Q100,120 200,160 T400,100 T600,140 T800,60 T1000,80 L1000,200 L0,200 Z" fill="url(#wave-gradient)"></path>
+<!-- Line Stroke -->
+<path d="M0,150 Q100,120 200,160 T400,100 T600,140 T800,60 T1000,80" fill="none" filter="url(#glow)" stroke="#85adff" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+<!-- Right Column Stack -->
+<div class="col-span-4 flex flex-col gap-6">
+<!-- Mini Cards Row -->
+<div class="flex gap-4">
+<div class="flex-1 bg-surface-container/60 backdrop-blur-xl rounded-xl ghost-border p-5 relative overflow-hidden shadow-[0px_20px_40px_rgba(0,0,0,0.4)] group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-tertiary/10 rounded-full blur-[20px] group-hover:bg-tertiary/20 transition-all"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-tertiary">calendar_month</span>
+<div class="grid grid-cols-3 gap-1 opacity-20">
+<div class="w-1 h-1 bg-white rounded-full"></div><div class="w-1 h-1 bg-white rounded-full"></div><div class="w-1 h-1 bg-white rounded-full"></div>
+<div class="w-1 h-1 bg-white rounded-full"></div><div class="w-1 h-1 bg-white rounded-full"></div><div class="w-1 h-1 bg-white rounded-full"></div>
+</div>
+</div>
+<p class="text-on-surface-variant text-xs uppercase tracking-wider mb-1">Total Bookings</p>
+<p class="text-2xl font-semibold text-on-surface">124</p>
+</div>
+<div class="flex-1 bg-surface-container/60 backdrop-blur-xl rounded-xl ghost-border p-5 relative overflow-hidden shadow-[0px_20px_40px_rgba(0,0,0,0.4)] group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-secondary/10 rounded-full blur-[20px] group-hover:bg-secondary/20 transition-all"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-secondary">dark_mode</span>
+</div>
+<p class="text-on-surface-variant text-xs uppercase tracking-wider mb-1">Nights Sold</p>
+<p class="text-2xl font-semibold text-on-surface">842</p>
+</div>
+</div>
+<!-- Card 3: AI Briefings -->
+<div class="flex-1 bg-surface-container/60 backdrop-blur-xl rounded-xl ghost-border p-6 shadow-[0px_20px_40px_rgba(0,0,0,0.4)] flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-on-surface font-semibold text-lg flex items-center gap-2">
+                            AI Briefings
+                            <span class="bg-secondary/20 text-secondary text-[10px] uppercase px-1.5 py-0.5 rounded border border-secondary/30">New</span>
+</h3>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm cursor-pointer hover:text-white">settings</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm cursor-pointer hover:text-white">terminal</span>
+</div>
+</div>
+<div class="flex gap-2 mb-6">
+<button class="px-3 py-1 text-xs rounded-full bg-surface text-on-surface-variant border border-white/5 hover:border-white/20 transition-colors">All</button>
+<button class="px-3 py-1 text-xs rounded-full bg-surface text-on-surface-variant border border-white/5 hover:border-white/20 transition-colors">Pending</button>
+<button class="px-3 py-1 text-xs rounded-full bg-primary/20 text-primary border border-primary/30">Completed</button>
+</div>
+<div class="bg-surface-container-highest rounded-lg p-4 border border-white/5 relative overflow-hidden mt-auto group hover:border-white/10 transition-colors cursor-pointer">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full blur-[30px]"></div>
+<div class="flex justify-between items-start mb-3">
+<span class="text-xs bg-surface border border-white/10 text-on-surface-variant px-2 py-1 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-secondary">auto_awesome</span> GPT-4o
+                            </span>
+<span class="text-[10px] text-on-surface-variant">Generated in 45s</span>
+</div>
+<h4 class="text-sm font-semibold text-on-surface mb-1">April 2026 Briefing</h4>
+<p class="text-xs text-on-surface-variant mb-4">Ready to review</p>
+<div class="flex items-center gap-2 mt-2 pt-3 border-t border-white/5">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<span class="text-xs text-on-surface-variant">Status: <span class="text-on-surface">Complete</span></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4: Revenue Trends -->
+<div class="col-span-12 bg-surface-container/60 backdrop-blur-xl rounded-xl ghost-border p-8 mt-2 relative shadow-[0px_20px_40px_rgba(0,0,0,0.4)]">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<h3 class="text-on-surface font-semibold text-lg">Revenue Trends</h3>
+<span class="bg-surface-bright text-on-surface-variant text-xs px-2 py-0.5 rounded border border-white/10">MoM</span>
+</div>
+<button class="text-primary text-sm hover:text-primary-dim transition-colors flex items-center gap-1">
+                        View Report <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="h-64 relative flex items-end">
+<!-- Y Axis Labels -->
+<div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-on-surface-variant pb-8 pr-4 border-r border-white/5">
+<span>$150k</span>
+<span>$100k</span>
+<span>$50k</span>
+<span>$0</span>
+</div>
+<!-- Chart Container -->
+<div class="w-full h-full pl-12 relative pb-8">
+<!-- Horizontal Grid Lines -->
+<div class="absolute inset-0 pl-12 flex flex-col justify-between pointer-events-none pb-8 opacity-20">
+<div class="w-full h-[1px] bg-outline-variant"></div>
+<div class="w-full h-[1px] bg-outline-variant"></div>
+<div class="w-full h-[1px] bg-outline-variant"></div>
+<div class="w-full h-[1px] bg-outline-variant"></div>
+</div>
+<!-- Smooth Line Chart SVG -->
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 1000 200">
+<defs>
+<lineargradient id="line-gradient" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0%" stop-color="#85adff"></stop>
+<stop offset="100%" stop-color="#c180ff"></stop>
+</lineargradient>
+<filter id="glow-line">
+<fegaussianblur result="coloredBlur" stddeviation="3"></fegaussianblur>
+<femerge>
+<femergenode in="coloredBlur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+</defs>
+<path d="M0,180 C150,180 200,120 350,140 C500,160 550,80 700,60 C850,40 900,20 1000,10" fill="none" filter="url(#glow-line)" stroke="url(#line-gradient)" stroke-linecap="round" stroke-width="4"></path>
+<!-- Pulsing Current Month Data Point -->
+<g transform="translate(1000, 10)">
+<circle cx="0" cy="0" fill="#0e0e10" r="6" stroke="#c180ff" stroke-width="3"></circle>
+<circle class="glow-point opacity-50" cx="0" cy="0" fill="none" r="12" stroke="#c180ff" stroke-width="2"></circle>
+<!-- Floating Pill Label -->
+<rect fill="#262528" height="24" rx="12" stroke="#48474a" stroke-width="1" width="60" x="-30" y="-40"></rect>
+<text fill="#f9f5f8" font-family="Inter" font-size="12" font-weight="600" text-anchor="middle" x="0" y="-24">$142k</text>
+</g>
+</svg>
+<!-- X Axis Labels -->
+<div class="absolute bottom-0 left-12 w-full flex justify-between text-xs text-on-surface-variant px-4">
+<span>Jan</span>
+<span>Feb</span>
+<span>Mar</span>
+<span>Apr</span>
+<span>May</span>
+<span>Jun</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

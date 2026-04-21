@@ -13,10 +13,6 @@ jest.mock('@/lib/supabase/server', () => ({
 
 import { GET, PATCH } from '../route';
 
-function makeGetRequest() {
-  return new Request('http://localhost/api/pipeline/prompt', { method: 'GET' });
-}
-
 function makePatchRequest(body: Record<string, unknown>) {
   return new Request('http://localhost/api/pipeline/prompt', {
     method: 'PATCH',

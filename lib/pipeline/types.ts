@@ -20,7 +20,23 @@ export type PropertySummaryRow = {
   revenue: number;
   occupied_nights: number;
   adr: number;
-  revenue_delta: number | null;
+  yield_mom_pct: number | null;
+};
+
+export type PropertyDetailRow = {
+  listing_id: string;
+  listing_nickname: string;
+  revenue: number;
+  occupied_nights: number;
+  adr: number;
+  prev_revenue: number | null;
+  yield_mom_pct: number | null;
+};
+
+export type ChannelMixRow = {
+  channel_label: string;
+  total_revenue: number;
+  revenue_share: number;
 };
 
 export type PipelineInput = {
@@ -28,9 +44,14 @@ export type PipelineInput = {
   revenue_month: string;             // 'YYYY-MM-DD'
   property_count: number;            // total, before 10-property cap
   total_revenue: number;
+  avg_revenue: number;
+  min_revenue: number;
+  max_revenue: number;
   portfolio_adr: number;
   total_nights: number;
   properties: PropertySummaryRow[];  // up to 10, sorted by revenue desc
+  properties_data: PropertyDetailRow[]; // full list (or truncated) sorted by revenue asc
+  channel_mix: ChannelMixRow[]; // portfolio-wide channel share for this month
 };
 
 export type PipelineResult = {

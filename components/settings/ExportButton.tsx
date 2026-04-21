@@ -3,6 +3,14 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type ExportState = 'idle' | 'loading' | 'error';
 
@@ -72,60 +80,103 @@ export function ExportButton({ availableMonths }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-end gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label>From</Label>
-          <select
-            value={fromMonth}
-            onChange={(e) => {
-              setFromMonth(e.target.value);
-              if (e.target.value > toMonth) setToMonth(e.target.value);
-              setState('idle');
-            }}
-            className="rounded-md border bg-transparent px-3 py-1.5 text-sm"
-            disabled={availableMonths.length === 0}
-          >
-            {availableMonths.map((m) => (
-              <option key={m} value={m}>{formatMonth(m)}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label>To</Label>
-          <select
-            value={toMonth}
-            onChange={(e) => {
-              setToMonth(e.target.value);
-              if (e.target.value < fromMonth) setFromMonth(e.target.value);
-              setState('idle');
-            }}
-            className="rounded-md border bg-transparent px-3 py-1.5 text-sm"
-            disabled={availableMonths.length === 0}
-          >
-            {availableMonths.map((m) => (
-              <option key={m} value={m}>{formatMonth(m)}</option>
-            ))}
-          </select>
-        </div>
-
-        <Button
-          onClick={handleExport}
-          disabled={state === 'loading' || availableMonths.length === 0}
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary"
         >
-          {state === 'loading' ? 'Exporting…' : 'Export to Excel'}
-        </Button>
+          <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+        </span>
+        <h2 className="text-sm font-semibold text-white/90">Select Date Range</h2>
       </div>
 
-      {state === 'error' && errorMsg && (
-        <p className="text-sm text-destructive">{errorMsg}</p>
-      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <Label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            From
+          </Label>
+          <Select
+            value={fromMonth}
+            onValueChange={(v) => {
+              if (!v) return;
+              setFromMonth(v);
+              if (v > toMonth) setToMonth(v);
+              setState('idle');
+            }}
+            disabled={availableMonths.length === 0}
+          >
+            <SelectTrigger className="h-[46px] w-full rounded-xl border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 hover:bg-black/35 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 dark:bg-black/30 dark:hover:bg-black/35">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-white/10 bg-zinc-900/95 text-zinc-100 shadow-[0px_20px_40px_rgba(0,0,0,0.55)] ring-1 ring-white/10 backdrop-blur-xl">
+              {availableMonths.map((m) => (
+                <SelectItem
+                  key={m}
+                  value={m}
+                  className="rounded-lg focus:bg-white/5 focus:text-white data-[highlighted]:bg-white/5 data-[highlighted]:text-white"
+                >
+                  {formatMonth(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            To
+          </Label>
+          <Select
+            value={toMonth}
+            onValueChange={(v) => {
+              if (!v) return;
+              setToMonth(v);
+              if (v < fromMonth) setFromMonth(v);
+              setState('idle');
+            }}
+            disabled={availableMonths.length === 0}
+          >
+            <SelectTrigger className="h-[46px] w-full rounded-xl border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 hover:bg-black/35 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 dark:bg-black/30 dark:hover:bg-black/35">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border border-white/10 bg-zinc-900/95 text-zinc-100 shadow-[0px_20px_40px_rgba(0,0,0,0.55)] ring-1 ring-white/10 backdrop-blur-xl">
+              {availableMonths.map((m) => (
+                <SelectItem
+                  key={m}
+                  value={m}
+                  className="rounded-lg focus:bg-white/5 focus:text-white data-[highlighted]:bg-white/5 data-[highlighted]:text-white"
+                >
+                  {formatMonth(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleExport}
+        disabled={state === 'loading' || availableMonths.length === 0}
+        className={cn(
+          'h-11 w-full rounded-full bg-gradient-to-r from-primary to-secondary text-on-primary-fixed hover:opacity-95',
+          state === 'loading' && 'opacity-80'
+        )}
+      >
+        <span className="material-symbols-outlined mr-2 text-[18px]" aria-hidden>
+          download
+        </span>
+        {state === 'loading' ? 'Exporting…' : 'Export to Excel'}
+      </Button>
+
+      <p className="text-xs text-zinc-600">
+        File will download immediately as a .xlsx format.
+      </p>
+
+      {state === 'error' && errorMsg && <p className="text-sm text-rose-400">{errorMsg}</p>}
 
       {availableMonths.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No data available for export. Upload reservation data first.
-        </p>
+        <p className="text-sm text-zinc-500">No data available for export. Upload reservation data first.</p>
       )}
     </div>
   );

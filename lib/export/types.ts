@@ -19,9 +19,15 @@ export type RawReservationRow = {
   data: Record<string, string | number | null>;
 };
 
+export type AiBriefingRow = {
+  revenue_month: string;
+  briefing_text: string;
+};
+
 export type ReportInput = {
   summary: SummaryRow[];
   reservations: RawReservationRow[];
+  aiBriefings: AiBriefingRow[];
   generatedAt: Date;
   companyName: string;
 };

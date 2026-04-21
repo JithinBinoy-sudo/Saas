@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Portlio - Atmospheric Precision in PropTech</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .text-display-lg { font-size: 4rem; line-height: 1.1; }
+        .text-title-lg { font-size: 1.5rem; line-height: 1.2; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ff6e84",
+                        "tertiary-container": "#00cffc",
+                        "surface-container-lowest": "#000000",
+                        "primary": "#85adff",
+                        "tertiary-fixed": "#00cffc",
+                        "primary-container": "#6e9fff",
+                        "primary-dim": "#699cff",
+                        "on-primary-fixed-variant": "#002a62",
+                        "surface-bright": "#2c2c2f",
+                        "on-tertiary-fixed": "#002a35",
+                        "background": "#0e0e10",
+                        "on-background": "#f9f5f8",
+                        "primary-fixed": "#6e9fff",
+                        "on-secondary-fixed-variant": "#7511c3",
+                        "on-surface": "#f9f5f8",
+                        "on-primary-container": "#002150",
+                        "error-container": "#a70138",
+                        "on-primary": "#002c66",
+                        "surface-container-low": "#131315",
+                        "on-surface-variant": "#adaaad",
+                        "on-error": "#490013",
+                        "on-secondary-fixed": "#4f0089",
+                        "on-tertiary-fixed-variant": "#004a5c",
+                        "outline-variant": "#48474a",
+                        "surface-container": "#19191c",
+                        "surface-dim": "#0e0e10",
+                        "inverse-on-surface": "#565457",
+                        "on-secondary-container": "#e9cdff",
+                        "tertiary": "#69daff",
+                        "secondary-dim": "#9c48ea",
+                        "outline": "#767577",
+                        "tertiary-fixed-dim": "#00c0ea",
+                        "on-error-container": "#ffb2b9",
+                        "on-secondary": "#33005b",
+                        "on-tertiary-container": "#004050",
+                        "secondary-fixed-dim": "#dbb4ff",
+                        "tertiary-dim": "#00c0ea",
+                        "primary-fixed-dim": "#5391ff",
+                        "surface-container-high": "#1f1f22",
+                        "secondary-fixed": "#e5c6ff",
+                        "inverse-primary": "#005bc4",
+                        "secondary": "#c180ff",
+                        "on-tertiary": "#004a5d",
+                        "surface": "#0e0e10",
+                        "inverse-surface": "#fcf8fb",
+                        "error-dim": "#d73357",
+                        "surface-variant": "#262528",
+                        "surface-tint": "#85adff",
+                        "on-primary-fixed": "#000000",
+                        "secondary-container": "#6f00be",
+                        "surface-container-highest": "#262528"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased selection:bg-primary-container/30 selection:text-primary">
+<!-- TopNavBar Component -->
+<nav class="fixed top-0 w-full z-50 bg-zinc-950/80 backdrop-blur-xl no-border shadow-[0px_20px_40px_rgba(0,0,0,0.4)]">
+<div class="flex justify-between items-center max-w-7xl mx-auto px-8 h-20">
+<div class="text-2xl font-bold text-white tracking-tighter">
+                Portlio
+            </div>
+<div class="hidden md:flex items-center gap-8 font-inter tracking-tight font-medium">
+<a class="text-zinc-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-lg" href="#">Solutions</a>
+<a class="text-zinc-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-lg" href="#">AI Analytics</a>
+<a class="text-zinc-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-lg" href="#">Portfolio</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-zinc-400 hover:text-white transition-colors font-medium active:scale-95 transition-transform duration-200">
+                    Sign In
+                </button>
+<button class="bg-gradient-to-r from-primary to-secondary text-on-primary-fixed font-bold px-5 py-2.5 rounded-full hover:shadow-[0_0_20px_rgba(133,173,255,0.4)] active:scale-95 transition-all duration-200">
+                    Get Started
+                </button>
+</div>
+</div>
+</nav>
+<main class="relative pt-32 pb-24 overflow-hidden">
+<!-- Ambient Glows -->
+<div class="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary opacity-10 blur-[150px] rounded-full pointer-events-none"></div>
+<div class="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-secondary opacity-10 blur-[150px] rounded-full pointer-events-none"></div>
+<!-- Section 1: Hero -->
+<section class="relative z-10 max-w-7xl mx-auto px-8 text-center pt-16 pb-24">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-high/50 ring-1 ring-outline-variant/20 backdrop-blur-md mb-8">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(105,218,255,0.8)]"></span>
+<span class="text-sm font-medium text-on-surface-variant">Introducing Obsidian Intelligence Model</span>
+</div>
+<h1 class="font-headline text-display-lg tracking-[-0.02em] font-extrabold text-on-surface max-w-5xl mx-auto mb-6 drop-shadow-2xl">
+                Predict the Future of <br/> Property Assets
+            </h1>
+<p class="text-xl text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed font-body">
+                Harness AI-driven portfolio intelligence to uncover hidden yield, forecast market shifts, and command your assets with atmospheric precision.
+            </p>
+<div class="flex items-center justify-center gap-4 mb-20">
+<button class="bg-gradient-to-r from-primary to-secondary text-on-primary-fixed font-bold px-8 py-4 rounded-full text-lg shadow-[0_0_25px_rgba(133,173,255,0.25)] hover:shadow-[0_0_35px_rgba(133,173,255,0.4)] transition-all duration-300 hover:scale-105 active:scale-95">
+                    Get Started
+                </button>
+</div>
+<div class="relative max-w-5xl mx-auto rounded-xl overflow-hidden ring-1 ring-outline-variant/20 shadow-[0px_30px_60px_rgba(0,0,0,0.6)] group">
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent z-10"></div>
+<img alt="High-end 3D abstract visualization of glowing blue and purple data nodes connecting over a dark, sleek map, depth of field effect" class="w-full h-[500px] object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="High-end 3D abstract visualization of glowing blue and purple data nodes connecting like a constellation over a dark, sleek cityscape map, depth of field effect, premium tech aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLRD5xK-3QiRXzg7e6TnEiMzIlZ6O4v8YhiKslh7Tfb1yp2ZwVm-gcINxNdeBeEpMSIFxeKhU5YDIV1aLefLWDlGcxsaZhoaAhdGfKi2N-5we6ENBruktm5CnkmeufhXbBGSKZgZzAT50Bec7O_9iw7fcalEbaC0BaXrkyQcABUoREHxXoKqlv2zxpzEVnmMqrC9N7PFsnCtZkGhgkXC67wX4Lx5ZBDxZPh-kKutyx5xRcDldIEg0Ld4e9huDQoAweql-Zu-19U7U"/>
+</div>
+</section>
+<!-- Section 2: Value Proposition -->
+<section class="relative z-10 max-w-7xl mx-auto px-8 py-24">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container/60 backdrop-blur-[20px] rounded-[2rem] p-8 ring-1 ring-outline-variant/15 relative overflow-hidden group hover:bg-surface-container transition-colors duration-500 shadow-[0px_20px_40px_rgba(0,0,0,0.2)]">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full group-hover:bg-primary/20 transition-all duration-500"></div>
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 ring-1 ring-outline-variant/30 text-tertiary-container shadow-[0_0_15px_rgba(0,207,252,0.1)]">
+<span class="material-symbols-outlined">auto_graph</span>
+</div>
+<h3 class="text-title-lg font-bold text-on-surface mb-3 tracking-tight">AI Intelligence</h3>
+<p class="text-on-surface-variant leading-relaxed">
+                        Automated, narrative-driven briefings that synthesize thousands of market data points into actionable institutional strategies.
+                    </p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container/60 backdrop-blur-[20px] rounded-[2rem] p-8 ring-1 ring-outline-variant/15 relative overflow-hidden group hover:bg-surface-container transition-colors duration-500 shadow-[0px_20px_40px_rgba(0,0,0,0.2)]">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 blur-3xl rounded-full group-hover:bg-secondary/20 transition-all duration-500"></div>
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 ring-1 ring-outline-variant/30 text-secondary shadow-[0_0_15px_rgba(193,128,255,0.1)]">
+<span class="material-symbols-outlined">database</span>
+</div>
+<h3 class="text-title-lg font-bold text-on-surface mb-3 tracking-tight">Unified Data</h3>
+<p class="text-on-surface-variant leading-relaxed">
+                        Seamless ingest from legacy Excel models and native Supabase architecture. Your entire portfolio, normalized in milliseconds.
+                    </p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container/60 backdrop-blur-[20px] rounded-[2rem] p-8 ring-1 ring-outline-variant/15 relative overflow-hidden group hover:bg-surface-container transition-colors duration-500 shadow-[0px_20px_40px_rgba(0,0,0,0.2)]">
+<div class="absolute top-0 right-0 w-32 h-32 bg-tertiary/10 blur-3xl rounded-full group-hover:bg-tertiary/20 transition-all duration-500"></div>
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 ring-1 ring-outline-variant/30 text-primary shadow-[0_0_15px_rgba(133,173,255,0.1)]">
+<span class="material-symbols-outlined">shield_lock</span>
+</div>
+<h3 class="text-title-lg font-bold text-on-surface mb-3 tracking-tight">Institutional Grade</h3>
+<p class="text-on-surface-variant leading-relaxed">
+                        Built for family offices and REITs. Bank-level encryption, SOC2 compliance, and uncompromising atmospheric execution speed.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Section 3: Dashboard Preview -->
+<section class="relative z-10 max-w-[90rem] mx-auto px-8 py-24">
+<div class="text-center mb-16">
+<h2 class="font-headline text-4xl font-bold text-on-surface mb-4 tracking-tight">Command Center Aesthetic</h2>
+<p class="text-on-surface-variant text-lg max-w-2xl mx-auto">Interact with your data through a high-fidelity glassmorphic interface designed to surface insights instantly.</p>
+</div>
+<div class="relative rounded-[2rem] p-2 bg-surface-container-low/50 ring-1 ring-outline-variant/20 backdrop-blur-3xl shadow-[0px_40px_80px_rgba(0,0,0,0.5)]">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-[2rem] pointer-events-none"></div>
+<img alt="Sleek dark mode financial dashboard interface with glowing neon blue and purple line charts" class="w-full rounded-[1.5rem] object-cover ring-1 ring-outline-variant/10" data-alt="Sleek dark mode PropTech dashboard interface with glowing neon blue line charts, glassmorphic data panels, modern typography, and a dark map visualization" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhulk3dRFiCIzNxsBXFJXY1jX73VoisfR-myxoPFwq4IXe5dXM4MfOHgt1OHmQibzYZKOMThF-GlE6pkHdeTBFu9BaSqBQ7nQ1-BCAw8CqhR60UxUfdIHgcISOJmJY-3XD4gokfHjmzdOSEyg0BRH8-D2FvKuQNSbIXnOYUpiR1cTW1S5uqHKsT-zm36EC7eDuo1oV42Z0me8iECWxyE5PQQvEb-p1UopcMvVjxlDEfkH6c8E-Ong4xPU1i36yAmlg20MWeUEPAao"/>
+</div>
+</section>
+<!-- Section 4: Social Proof -->
+<section class="relative z-10 max-w-7xl mx-auto px-8 py-16 border-t border-outline-variant/10">
+<p class="text-center text-sm font-semibold text-on-surface-variant uppercase tracking-widest mb-10">
+                Trusted by global real estate leaders
+            </p>
+<div class="flex flex-wrap justify-center items-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+<span class="font-headline text-2xl font-bold text-on-surface tracking-tighter">AURA CAP</span>
+<span class="font-headline text-2xl font-bold text-on-surface tracking-tighter">NEXUS REIT</span>
+<span class="font-headline text-2xl font-bold text-on-surface tracking-tighter">LUMINA</span>
+<span class="font-headline text-2xl font-bold text-on-surface tracking-tighter">VANTAGE</span>
+</div>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="bg-zinc-950 w-full py-12 border-t border-zinc-800/20 shadow-none">
+<div class="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-8 gap-6 text-sm font-inter text-zinc-500">
+<div class="text-xl font-black text-white">
+                Portlio
+            </div>
+<div class="text-center md:text-left">
+                © 2024 Portlio Analytics. Atmospheric Precision in PropTech.
+            </div>
+<div class="flex items-center gap-6">
+<a class="text-zinc-500 hover:text-blue-400 transition-colors" href="#">Terms</a>
+<a class="text-zinc-500 hover:text-blue-400 transition-colors" href="#">Privacy</a>
+<a class="text-zinc-500 hover:text-blue-400 transition-colors" href="#">Security</a>
+<a class="text-zinc-500 hover:text-blue-400 transition-colors" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</body></html>

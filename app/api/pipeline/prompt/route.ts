@@ -2,16 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
 import { SUPPORTED_MODELS } from '@/lib/pipeline/types';
-
-const DEFAULT_SYSTEM_PROMPT = `You are a short-term rental portfolio analyst. Given monthly performance data for a vacation rental portfolio, write a concise executive briefing (3–5 paragraphs) that:
-1. Summarises portfolio-wide KPIs (revenue, ADR, occupancy) and month-over-month trends.
-2. Highlights top-performing and underperforming properties with specific numbers.
-3. Identifies actionable insights or risks (seasonality, pricing gaps, channel dependency).
-4. Keeps a professional but accessible tone suitable for property managers.`;
-
-const DEFAULT_USER_TEMPLATE = `Analyze the following portfolio data for {{revenue_month}}:
-
-{{data}}`;
+import { DEFAULT_SYSTEM_PROMPT, DEFAULT_USER_TEMPLATE } from '@/lib/pipeline/defaultPrompts';
 
 const DEFAULTS = {
   system_prompt: DEFAULT_SYSTEM_PROMPT,

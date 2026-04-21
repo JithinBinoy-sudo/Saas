@@ -37,5 +37,15 @@ export function buildReservationReport(input: ReportInput): Buffer {
   const rawSheet = XLSX.utils.json_to_sheet(rawRows);
   XLSX.utils.book_append_sheet(wb, rawSheet, 'Raw Reservations');
 
+  // Sheet 3: AI Briefing (optional)
+  if (input.aiBriefings.length > 0) {
+    const briefingRows = input.aiBriefings.map((b) => ({
+      Month: b.revenue_month,
+      Briefing: b.briefing_text,
+    }));
+    const briefingSheet = XLSX.utils.json_to_sheet(briefingRows);
+    XLSX.utils.book_append_sheet(wb, briefingSheet, 'AI Briefing');
+  }
+
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
 }

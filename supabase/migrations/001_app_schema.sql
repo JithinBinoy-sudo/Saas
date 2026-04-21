@@ -66,7 +66,8 @@ CREATE TABLE IF NOT EXISTS prompt_configs (
   temperature           real        NOT NULL DEFAULT 0.3,
   max_tokens            integer     NOT NULL DEFAULT 2000,
   updated_at            timestamptz NOT NULL DEFAULT now(),
-  updated_by            uuid        REFERENCES users(id)
+  updated_by            uuid        REFERENCES users(id),
+  CONSTRAINT prompt_configs_company_id_unique UNIQUE (company_id)
 );
 
 CREATE INDEX IF NOT EXISTS prompt_configs_company_id_idx ON prompt_configs(company_id);

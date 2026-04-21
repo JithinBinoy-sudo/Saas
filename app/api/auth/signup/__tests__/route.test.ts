@@ -5,6 +5,7 @@
 type AdminClient = {
   auth: { admin: { createUser: jest.Mock; deleteUser: jest.Mock } };
   from: jest.Mock;
+  userInsertMock: jest.Mock;
 };
 
 let adminClient: AdminClient;
@@ -48,6 +49,7 @@ function makeAdminClient(overrides: Partial<{
   return {
     auth: { admin: { createUser, deleteUser } },
     from,
+    userInsertMock: userInsert,
   };
 }
 
@@ -89,6 +91,13 @@ describe('POST /api/auth/signup', () => {
     });
     expect(adminClient.from).toHaveBeenCalledWith('companies');
     expect(adminClient.from).toHaveBeenCalledWith('users');
+    expect(adminClient.userInsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: 'member',
+        email: 'admin@acme.com',
+        company_id: 'company-1',
+      })
+    );
   });
 
   it('returns 409 when email already exists', async () => {

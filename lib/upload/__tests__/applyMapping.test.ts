@@ -39,7 +39,7 @@ describe('applyMapping', () => {
       nights: 4,
       net_accommodation_fare: 1280,
       listing_id: 'LST-1',
-      data: { Channel: 'Airbnb', Guest: 'Amelia' },
+      data: { Channel: 'Airbnb', Guest: 'Amelia', channel: 'Airbnb' },
     });
   });
 
@@ -128,7 +128,7 @@ describe('applyMapping', () => {
       Extra: 'unexpected',
     };
     const { record } = applyMapping(row, MAPPING, 2);
-    expect(record?.data).toEqual({ Channel: 'Airbnb', Guest: null });
+    expect(record?.data).toEqual({ Channel: 'Airbnb', Guest: null, channel: 'Airbnb' });
     expect(record?.data).not.toHaveProperty('Notes');
     expect(record?.data).not.toHaveProperty('Extra');
   });

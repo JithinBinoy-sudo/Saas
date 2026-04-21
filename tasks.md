@@ -98,3 +98,15 @@ Plan reference: `Docs/superpowers/plans/2026-04-17-portlio-phase6-plan.md`
 - [x] Task 13: Add SyncCard to Settings page
 
 Plan reference: `Docs/superpowers/specs/2026-04-18-byos-view-migration-design.md`
+
+## Phase 8 — Default user role & initial admin setup
+
+**Product intent:** All new accounts are regular users (`member` or equivalent). In the Portlio dashboard sidebar, every user sees an **Admin** entry. If they are not yet an admin, clicking it opens an **initial admin setup** flow: the work email is fixed to the already-registered company email (read-only); they confirm **register as admin** and choose the password for that account (same auth identity — no new email). After success, they gain admin access (e.g. `/admin`, prompt settings, export) per existing guards. **First user of a company** is a `member` until they complete initial admin setup (no separate “founder admin” at signup).
+
+- [x] **Task 47:** Confirm **default role** on signup — DB default, `POST` signup route, and auth callback all assign non-admin (`member`) unless explicitly invited as admin; document any exception for the **first user of a company** if product requires it.
+- [x] **Task 48:** **Sidebar / nav** — Always show **Admin** in the dashboard nav (remove or replace `adminOnly` hide for the Admin item only). Non-admins navigate to the setup route; existing admins keep deep-link to `/admin` (or current admin home).
+- [x] **Task 49:** **Admin initial setup page** — New route (e.g. `/dashboard/admin/setup` or `/admin/setup`) with UI: show company/work email (from session + `users` row, read-only), password + confirm fields, short copy that this promotes the account to company admin, submit CTA.
+- [x] **Task 50:** **Backend: promote + set password** — Server action or API route (authenticated): verify caller is a `member` (or not yet admin) for their `company_id`, apply business rules (e.g. only if company has **zero** existing admins for “initial setup”, or allow designated flow per product), call Supabase Admin or `auth.updateUser` to set the new password, then set `users.role` to `admin` (transaction or ordered steps with rollback plan on failure).
+- [x] **Task 51:** **Authorization & abuse prevention** — RLS / checks so only eligible users can self-promote once; if company already has an admin, block or redirect to “request access” / invite flow; rate-limit or audit log the endpoint.
+- [x] **Task 52:** **Middleware & deep links** — Ensure `/admin` and admin-only APIs redirect non-admins to setup (or 403) consistently; after setup, redirect to `/admin` or dashboard with refreshed session/role in layout.
+- [x] **Task 53:** **Tests & verification** — Unit/integration tests for signup default role, setup API rules, and nav behavior; manual E2E: signup → dashboard → Admin → set password → admin routes visible.

@@ -15,6 +15,48 @@ type RequiredField = (typeof REQUIRED_FIELDS)[number];
 const NUMERIC_FIELDS = new Set<RequiredField>(['nights', 'net_accommodation_fare']);
 const DATE_FIELDS = new Set<RequiredField>(['check_in_date', 'check_out_date']);
 
+function normalizeKey(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+const CHANNEL_KEY_HINTS = new Set([
+  'channel',
+  'bookingchannel',
+  'booking_channel',
+  'ota',
+  'otachannel',
+  'distributionchannel',
+  'distribution_channel',
+  'platform',
+]);
+
+const SOURCE_KEY_HINTS = new Set([
+  'source',
+  'booking source',
+  'bookingsource',
+  'booking_source',
+  'marketplace',
+  'origin',
+]);
+
+function maybeSetCanonicalField(
+  data: Record<string, string | number | null>,
+  header: string,
+  value: string | number | null
+) {
+  const n = normalizeKey(header);
+  if (value === null || value === undefined) return;
+  const v = typeof value === 'number' ? String(value) : value;
+  if (!v || v.trim().length === 0) return;
+
+  if (!('channel' in data) && CHANNEL_KEY_HINTS.has(n)) {
+    data.channel = v;
+  }
+  if (!('source' in data) && SOURCE_KEY_HINTS.has(n)) {
+    data.source = v;
+  }
+}
+
 function coerceDate(value: unknown): string | 'invalid' | 'missing' {
   if (value === null || value === undefined || value === '') return 'missing';
   if (value instanceof Date) {
@@ -96,6 +138,8 @@ export function applyMapping(
       const s = String(raw).trim();
       data[header] = s.length === 0 ? null : s;
     }
+
+    maybeSetCanonicalField(data, header, data[header]);
   }
 
   return {

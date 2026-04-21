@@ -1,18 +1,12 @@
 import { redirect } from 'next/navigation';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
-import { PromptConfigForm } from '@/components/settings/PromptConfigForm';
 import type { PromptConfig } from '@/components/settings/PromptConfigForm';
-import { PromptTestPanel } from '@/components/settings/PromptTestPanel';
+import { AiPromptSettingsClient } from '@/components/settings/AiPromptSettingsClient';
+import { DEFAULT_SYSTEM_PROMPT, DEFAULT_USER_TEMPLATE } from '@/lib/pipeline/defaultPrompts';
 
 const DEFAULTS: PromptConfig = {
-  system_prompt: `You are a short-term rental portfolio analyst. Given monthly performance data for a vacation rental portfolio, write a concise executive briefing (3–5 paragraphs) that:
-1. Summarises portfolio-wide KPIs (revenue, ADR, occupancy) and month-over-month trends.
-2. Highlights top-performing and underperforming properties with specific numbers.
-3. Identifies actionable insights or risks (seasonality, pricing gaps, channel dependency).
-4. Keeps a professional but accessible tone suitable for property managers.`,
-  user_prompt_template: `Analyze the following portfolio data for {{revenue_month}}:
-
-{{data}}`,
+  system_prompt: DEFAULT_SYSTEM_PROMPT,
+  user_prompt_template: DEFAULT_USER_TEMPLATE,
   model: 'gpt-4o',
   temperature: 0.3,
   max_tokens: 2000,
@@ -53,22 +47,15 @@ export default async function PromptSettingsPage() {
   availableMonths = (months ?? []).map((m: { revenue_month: string }) => m.revenue_month);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">AI Prompt Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-3xl font-bold tracking-tight text-white">AI Prompt Settings</h1>
+        <p className="mt-2 text-sm text-white/60">
           Customize the system and user prompts used for portfolio briefing generation.
         </p>
       </div>
 
-      <PromptConfigForm initialConfig={promptConfig} />
-
-      <div className="border-t pt-6">
-        <PromptTestPanel
-          model={promptConfig.model}
-          availableMonths={availableMonths}
-        />
-      </div>
+      <AiPromptSettingsClient initialConfig={promptConfig} availableMonths={availableMonths} />
     </div>
   );
 }

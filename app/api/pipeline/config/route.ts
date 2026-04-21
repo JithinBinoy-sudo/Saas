@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
 import { SUPPORTED_MODELS } from '@/lib/pipeline/types';
+import { DEFAULT_SYSTEM_PROMPT, DEFAULT_USER_TEMPLATE } from '@/lib/pipeline/defaultPrompts';
 
 export async function PATCH(request: NextRequest) {
   const supabase = createAppServerClient();
@@ -31,10 +32,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  if (userRow.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
-
   const admin = createAppAdminClient();
 
   const { error } = await admin
@@ -44,8 +41,8 @@ export async function PATCH(request: NextRequest) {
         company_id: userRow.company_id,
         model,
         name: 'portfolio_analysis',
-        system_prompt: 'You are a short-term rental portfolio analyst.',
-        user_prompt_template: 'Analyze the following portfolio data for {{revenue_month}}:\n\n{{data}}',
+        system_prompt: DEFAULT_SYSTEM_PROMPT,
+        user_prompt_template: DEFAULT_USER_TEMPLATE,
         updated_at: new Date().toISOString(),
         updated_by: user.id,
       },

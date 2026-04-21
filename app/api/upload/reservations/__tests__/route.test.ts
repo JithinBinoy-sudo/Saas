@@ -11,7 +11,7 @@ type ServerClient = {
   auth: { getUser: jest.Mock };
 };
 
-let adminClient: AdminClient;
+let adminClient: AdminClient & { reservationsUpsert: jest.Mock };
 let serverClient: ServerClient;
 let getDataClientMock: jest.Mock;
 let dataClientUpsert: jest.Mock;
@@ -57,8 +57,11 @@ function setupAdminForCompany(
   mode: 'hosted' | 'byos',
   opts: {
     mappingRow?: { mappings: unknown } | null;
+    reservationsUpsert?: jest.Mock;
   } = {}
-): AdminClient {
+): AdminClient & { reservationsUpsert: jest.Mock } {
+  const reservationsUpsert =
+    opts.reservationsUpsert ?? jest.fn().mockResolvedValue({ error: null });
   const from = jest.fn((table: string) => {
     if (table === 'users') {
       return {
@@ -112,15 +115,14 @@ function setupAdminForCompany(
       };
     }
     if (table === 'reservations') {
-      // BYOS dual-write to app DB
       return {
-        upsert: jest.fn().mockResolvedValue({ error: null }),
+        upsert: reservationsUpsert,
       };
     }
     throw new Error(`unexpected admin table ${table}`);
   });
 
-  return { from };
+  return { from, reservationsUpsert };
 }
 
 function makeMultipartRequest(buf: ArrayBuffer, filename = 'test.xlsx'): Request {
@@ -181,8 +183,9 @@ describe('POST /api/upload/reservations', () => {
     expect(body.failed).toBe(0);
     expect(body.errors).toEqual([]);
 
-    expect(dataClientUpsert).toHaveBeenCalledTimes(1);
-    const [rows, opts] = dataClientUpsert.mock.calls[0];
+    expect(getDataClientMock).not.toHaveBeenCalled();
+    expect(adminClient.reservationsUpsert).toHaveBeenCalledTimes(1);
+    const [rows, opts] = adminClient.reservationsUpsert.mock.calls[0];
     expect(rows[0]).toMatchObject({
       company_id: 'company-1',
       confirmation_code: 'HM-1',
@@ -218,8 +221,8 @@ describe('POST /api/upload/reservations', () => {
     expect(body.inserted).toBe(1);
     expect(body.failed).toBe(1);
     expect(body.errors[0]).toMatchObject({ field: 'confirmation_code' });
-    expect(dataClientUpsert).toHaveBeenCalledTimes(1);
-    const [rows] = dataClientUpsert.mock.calls[0];
+    expect(adminClient.reservationsUpsert).toHaveBeenCalledTimes(1);
+    const [rows] = adminClient.reservationsUpsert.mock.calls[0];
     expect(rows).toHaveLength(1);
   });
 

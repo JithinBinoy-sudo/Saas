@@ -28,9 +28,15 @@ export default async function ProtectedLayout({
 
   const { data: companyRow } = await supabase
     .from('companies')
-    .select('schema_deployed')
+    .select('schema_deployed, mode')
     .eq('id', userRow.company_id)
     .single();
+
+  const { count: adminCount } = await supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', userRow.company_id)
+    .eq('role', 'admin');
 
   // The onboarding page renders inside this layout too. Don't wrap it in the
   // dashboard chrome — the wizard wants a centered single-column layout.
@@ -48,5 +54,12 @@ export default async function ProtectedLayout({
     return <>{children}</>;
   }
 
-  return <DashboardLayout user={user}>{children}</DashboardLayout>;
+  const companyMode =
+    companyRow?.mode === 'byos' || companyRow?.mode === 'hosted' ? companyRow.mode : 'hosted';
+
+  return (
+    <DashboardLayout user={user} companyMode={companyMode} workspaceHasAdmin={(adminCount ?? 0) > 0}>
+      {children}
+    </DashboardLayout>
+  );
 }

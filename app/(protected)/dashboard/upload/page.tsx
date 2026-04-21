@@ -4,15 +4,23 @@ export const metadata = { title: 'Portlio — Upload Reservations' };
 
 export default function UploadPage() {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Upload reservations</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Drop a reservation Excel export. We&apos;ll map columns using your saved onboarding
-          mapping, validate each row, and insert or update your data.
-        </p>
-      </header>
-      <UploadDropzone />
+    <div className="relative flex min-h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="mx-auto w-full max-w-[42rem] rounded-[36px] border border-white/[0.04] bg-[#121214] p-8 sm:p-10 shadow-[0px_40px_80px_rgba(0,0,0,0.6)]">
+        
+        <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+          <span className="material-symbols-outlined text-[28px] text-[#85ADFF]">
+            cloud_upload
+          </span>
+        </div>
+
+        <div className="mb-8 text-center">
+          <h1 className="text-[28px] font-bold tracking-tight text-white">
+            Upload Data File
+          </h1>
+        </div>
+
+        <UploadDropzone />
+      </div>
     </div>
   );
 }

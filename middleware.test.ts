@@ -7,6 +7,7 @@ type Profile = {
   company_id?: string;
   role?: 'admin' | 'member';
   schema_deployed?: boolean;
+  mode?: string;
 };
 
 let profile: Profile;
@@ -24,7 +25,10 @@ jest.mock('@supabase/ssr', () => ({
     const companiesSingle = jest.fn().mockImplementation(() =>
       Promise.resolve({
         data: profile.user
-          ? { schema_deployed: profile.schema_deployed ?? false }
+          ? {
+              schema_deployed: profile.schema_deployed ?? false,
+              mode: profile.mode ?? 'hosted',
+            }
           : null,
         error: profile.user ? null : { message: 'no row' },
       })
@@ -101,10 +105,64 @@ describe('middleware route protection', () => {
     expect(getRedirect(res)).toBeNull();
   });
 
-  it('redirects /admin to /dashboard when role is member', async () => {
+  it('redirects BYOS /dashboard/upload to settings when schema is deployed', async () => {
+    profile = {
+      user: { id: 'u1' },
+      company_id: 'c1',
+      role: 'admin',
+      schema_deployed: true,
+      mode: 'byos',
+    };
+    const res = await middleware(makeRequest('/dashboard/upload'));
+    expect(getRedirect(res)).toBe('/dashboard/settings');
+  });
+
+  it('redirects BYOS /dashboard/upload/history to settings when schema is deployed', async () => {
+    profile = {
+      user: { id: 'u1' },
+      company_id: 'c1',
+      role: 'admin',
+      schema_deployed: true,
+      mode: 'byos',
+    };
+    const res = await middleware(makeRequest('/dashboard/upload/history'));
+    expect(getRedirect(res)).toBe('/dashboard/settings');
+  });
+
+  it('allows hosted /dashboard/upload when schema is deployed', async () => {
+    profile = {
+      user: { id: 'u1' },
+      company_id: 'c1',
+      role: 'admin',
+      schema_deployed: true,
+      mode: 'hosted',
+    };
+    const res = await middleware(makeRequest('/dashboard/upload'));
+    expect(getRedirect(res)).toBeNull();
+  });
+
+  it('redirects /admin to admin setup when role is member', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'member', schema_deployed: true };
     const res = await middleware(makeRequest('/admin'));
-    expect(getRedirect(res)).toBe('/dashboard');
+    expect(getRedirect(res)).toBe('/dashboard/admin/setup');
+  });
+
+  it('redirects /dashboard/admin to admin setup when role is member', async () => {
+    profile = { user: { id: 'u1' }, company_id: 'c1', role: 'member', schema_deployed: true };
+    const res = await middleware(makeRequest('/dashboard/admin'));
+    expect(getRedirect(res)).toBe('/dashboard/admin/setup');
+  });
+
+  it('allows /dashboard/admin when role is admin and schema is deployed', async () => {
+    profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: true };
+    const res = await middleware(makeRequest('/dashboard/admin'));
+    expect(getRedirect(res)).toBeNull();
+  });
+
+  it('allows /dashboard/admin/setup when role is member and schema is deployed', async () => {
+    profile = { user: { id: 'u1' }, company_id: 'c1', role: 'member', schema_deployed: true };
+    const res = await middleware(makeRequest('/dashboard/admin/setup'));
+    expect(getRedirect(res)).toBeNull();
   });
 
   it('allows /admin when role is admin', async () => {
@@ -117,6 +175,12 @@ describe('middleware route protection', () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: true };
     const res = await middleware(makeRequest('/auth'));
     expect(getRedirect(res)).toBe('/dashboard');
+  });
+
+  it('allows /auth when logged in but onboarding is incomplete', async () => {
+    profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: false };
+    const res = await middleware(makeRequest('/auth'));
+    expect(getRedirect(res)).toBeNull();
   });
 
   it('allows /auth when not logged in', async () => {

@@ -34,14 +34,16 @@ function fmtDelta(n: number | null): string {
 }
 
 function DeltaCell({ value }: { value: number | null }) {
-  if (value == null) return <span className="text-slate-400">–</span>;
+  if (value == null) {
+    return <span className="text-on-surface-variant">–</span>;
+  }
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 text-sm font-medium',
-        value > 0 && 'text-green-600',
-        value < 0 && 'text-red-600',
-        value === 0 && 'text-slate-400'
+        'inline-flex items-center gap-0.5 text-sm font-medium tabular-nums',
+        value > 0 && 'text-[#4ADE80]',
+        value < 0 && 'text-[#F87171]',
+        value === 0 && 'text-on-surface-variant'
       )}
     >
       {value > 0 ? '↑' : value < 0 ? '↓' : ''}
@@ -68,16 +70,36 @@ function SortableHeader({
   const isActive = currentSort === sortKey;
   return (
     <TableHead
-      className={cn('cursor-pointer select-none hover:bg-slate-50', className)}
+      className={cn(
+        'cursor-pointer select-none text-on-surface-variant font-medium transition-colors hover:bg-white/5 hover:text-on-surface',
+        'h-auto py-3.5 align-middle',
+        className
+      )}
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">
         {label}
         {isActive && (
-          <span className="text-xs">{currentDir === 'asc' ? '▲' : '▼'}</span>
+          <span className="text-[10px] leading-none opacity-90">
+            {currentDir === 'asc' ? '▲' : '▼'}
+          </span>
         )}
       </span>
     </TableHead>
+  );
+}
+
+function PropertyCell({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <span
+        className="material-symbols-outlined shrink-0 text-on-surface-variant text-[20px] leading-none"
+        aria-hidden
+      >
+        apartment
+      </span>
+      <span className="font-medium text-on-surface truncate">{label}</span>
+    </div>
   );
 }
 
@@ -100,8 +122,14 @@ export function PropertyTable({ rows }: Props) {
       let bVal: number;
 
       if (sortKey === 'vs_median') {
-        aVal = (a.portfolio_median_revenue != null) ? a.revenue - a.portfolio_median_revenue : 0;
-        bVal = (b.portfolio_median_revenue != null) ? b.revenue - b.portfolio_median_revenue : 0;
+        aVal =
+          a.portfolio_median_revenue != null
+            ? a.revenue - a.portfolio_median_revenue
+            : 0;
+        bVal =
+          b.portfolio_median_revenue != null
+            ? b.revenue - b.portfolio_median_revenue
+            : 0;
       } else {
         aVal = (a[sortKey] as number) ?? 0;
         bVal = (b[sortKey] as number) ?? 0;
@@ -113,82 +141,123 @@ export function PropertyTable({ rows }: Props) {
 
   if (rows.length === 0) return null;
 
+  const rowCellClass = 'py-4 align-middle text-on-surface tabular-nums';
+  const headCellClass =
+    'text-on-surface-variant font-medium h-auto py-3.5 align-middle';
+
   return (
-    <div className="rounded-xl border bg-white">
-      <div className="p-4 pb-2">
-        <h3 className="text-sm font-semibold text-slate-700">
+    <div
+      className={cn(
+        'mt-6 rounded-3xl ghost-border relative overflow-hidden shadow-[0px_20px_40px_rgba(0,0,0,0.4)]',
+        'bg-[#121212] backdrop-blur-xl'
+      )}
+    >
+      <div className="p-8">
+        <h3 className="text-on-surface font-semibold text-lg tracking-tight mb-6">
           Property Breakdown
         </h3>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Property</TableHead>
-            <SortableHeader
-              label="Revenue"
-              sortKey="revenue"
-              currentSort={sortKey}
-              currentDir={sortDir}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="vs Median"
-              sortKey="vs_median"
-              currentSort={sortKey}
-              currentDir={sortDir}
-              onSort={handleSort}
-              className="hidden md:table-cell"
-            />
-            <SortableHeader
-              label="Nights"
-              sortKey="occupied_nights"
-              currentSort={sortKey}
-              currentDir={sortDir}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="ADR"
-              sortKey="adr"
-              currentSort={sortKey}
-              currentDir={sortDir}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="vs Prev Month"
-              sortKey="revenue_delta"
-              currentSort={sortKey}
-              currentDir={sortDir}
-              onSort={handleSort}
-              className="hidden md:table-cell"
-            />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.map((row) => {
-            const vsMedian =
-              row.portfolio_median_revenue != null
-                ? row.revenue - row.portfolio_median_revenue
-                : null;
 
-            return (
-              <TableRow key={row.listing_id}>
-                <TableCell className="font-medium text-slate-900">
-                  {row.listing_nickname || row.listing_id}
-                </TableCell>
-                <TableCell>{fmtCurrency(row.revenue)}</TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <DeltaCell value={vsMedian} />
-                </TableCell>
-                <TableCell>{row.occupied_nights}</TableCell>
-                <TableCell>{fmtCurrency(row.adr)}</TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <DeltaCell value={row.revenue_delta} />
-                </TableCell>
+        <div className="w-full overflow-x-auto -mx-1 px-1">
+          <Table className="table-fixed min-w-[720px] w-full text-sm">
+            <colgroup>
+              <col className="w-[35%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[10%]" />
+              <col className="w-[13%]" />
+              <col className="w-[16%]" />
+            </colgroup>
+            <TableHeader>
+              <TableRow className="border-b border-white/5 hover:bg-transparent">
+                <TableHead
+                  className={cn(
+                    headCellClass,
+                    'text-left pl-0 pr-4 font-medium'
+                  )}
+                >
+                  Property
+                </TableHead>
+                <SortableHeader
+                  label="Revenue"
+                  sortKey="revenue"
+                  currentSort={sortKey}
+                  currentDir={sortDir}
+                  onSort={handleSort}
+                  className="text-left px-2"
+                />
+                <SortableHeader
+                  label="vs Median"
+                  sortKey="vs_median"
+                  currentSort={sortKey}
+                  currentDir={sortDir}
+                  onSort={handleSort}
+                  className="text-left px-2"
+                />
+                <SortableHeader
+                  label="Nights"
+                  sortKey="occupied_nights"
+                  currentSort={sortKey}
+                  currentDir={sortDir}
+                  onSort={handleSort}
+                  className="text-left px-2"
+                />
+                <SortableHeader
+                  label="ADR"
+                  sortKey="adr"
+                  currentSort={sortKey}
+                  currentDir={sortDir}
+                  onSort={handleSort}
+                  className="text-left px-2"
+                />
+                <SortableHeader
+                  label="vs Prev Month"
+                  sortKey="revenue_delta"
+                  currentSort={sortKey}
+                  currentDir={sortDir}
+                  onSort={handleSort}
+                  className="text-left pl-2 pr-0"
+                />
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {sorted.map((row) => {
+                const vsMedian =
+                  row.portfolio_median_revenue != null
+                    ? row.revenue - row.portfolio_median_revenue
+                    : null;
+
+                return (
+                  <TableRow
+                    key={row.listing_id}
+                    className="border-b border-white/5 hover:bg-white/[0.04] data-[state=selected]:bg-transparent transition-colors"
+                  >
+                    <TableCell className={cn(rowCellClass, 'pl-0 pr-4')}>
+                      <PropertyCell
+                        label={row.listing_nickname || row.listing_id}
+                      />
+                    </TableCell>
+                    <TableCell className={cn(rowCellClass, 'px-2')}>
+                      {fmtCurrency(row.revenue)}
+                    </TableCell>
+                    <TableCell className={cn(rowCellClass, 'px-2')}>
+                      <DeltaCell value={vsMedian} />
+                    </TableCell>
+                    <TableCell className={cn(rowCellClass, 'px-2')}>
+                      {row.occupied_nights}
+                    </TableCell>
+                    <TableCell className={cn(rowCellClass, 'px-2')}>
+                      {fmtCurrency(row.adr)}
+                    </TableCell>
+                    <TableCell className={cn(rowCellClass, 'pl-2 pr-0')}>
+                      <DeltaCell value={row.revenue_delta} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }

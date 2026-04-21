@@ -124,16 +124,10 @@ export async function POST(request: Request) {
   let upsertError: string | null = null;
 
   if (validRecords.length > 0) {
-    const dataClient = getDataClient({
-      mode: company.mode,
-      supabase_url: company.supabase_url,
-      supabase_service_key: company.supabase_service_key,
-    });
-
     if (company.mode === 'hosted') {
-      // Hosted: write directly to app DB
+      // Hosted: write directly to app DB using admin client (bypasses RLS)
       const payload = validRecords.map((r) => ({ ...r, company_id: companyId }));
-      const { error } = await dataClient.from('reservations').upsert(payload, {
+      const { error } = await admin.from('reservations').upsert(payload, {
         onConflict: 'company_id,confirmation_code',
       });
       if (error) {
@@ -143,6 +137,11 @@ export async function POST(request: Request) {
       }
     } else {
       // BYOS: write to company's Supabase first (source of truth)
+      const dataClient = getDataClient({
+        mode: company.mode,
+        supabase_url: company.supabase_url,
+        supabase_service_key: company.supabase_service_key,
+      });
       const { error } = await dataClient.from('reservations').upsert(validRecords, {
         onConflict: 'confirmation_code',
       });

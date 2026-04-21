@@ -6,12 +6,24 @@ const INPUT: PipelineInput = {
   revenue_month: '2026-03-01',
   property_count: 5,
   total_revenue: 12500,
+  avg_revenue: 2500,
+  min_revenue: 1000,
+  max_revenue: 5000,
   portfolio_adr: 250,
   total_nights: 50,
   properties: [
-    { listing_id: 'p1', listing_nickname: 'Beach House', revenue: 5000, occupied_nights: 20, adr: 250, revenue_delta: 0.15 },
-    { listing_id: 'p2', listing_nickname: 'Mountain Cabin', revenue: 4000, occupied_nights: 15, adr: 267, revenue_delta: -0.05 },
-    { listing_id: 'p3', listing_nickname: 'City Loft', revenue: 3500, occupied_nights: 15, adr: 233, revenue_delta: null },
+    { listing_id: 'p1', listing_nickname: 'Beach House', revenue: 5000, occupied_nights: 20, adr: 250, yield_mom_pct: 0.15 },
+    { listing_id: 'p2', listing_nickname: 'Mountain Cabin', revenue: 4000, occupied_nights: 15, adr: 267, yield_mom_pct: -0.05 },
+    { listing_id: 'p3', listing_nickname: 'City Loft', revenue: 3500, occupied_nights: 15, adr: 233, yield_mom_pct: null },
+  ],
+  properties_data: [
+    { listing_id: 'p4', listing_nickname: 'Lake Cottage', revenue: 1000, occupied_nights: 5, adr: 200, prev_revenue: 1200, yield_mom_pct: -0.1667 },
+    { listing_id: 'p3', listing_nickname: 'City Loft', revenue: 3500, occupied_nights: 15, adr: 233, prev_revenue: null, yield_mom_pct: null },
+    { listing_id: 'p1', listing_nickname: 'Beach House', revenue: 5000, occupied_nights: 20, adr: 250, prev_revenue: 4348, yield_mom_pct: 0.15 },
+  ],
+  channel_mix: [
+    { channel_label: 'Airbnb', total_revenue: 7000, revenue_share: 0.56 },
+    { channel_label: 'Booking.com', total_revenue: 5500, revenue_share: 0.44 },
   ],
 };
 

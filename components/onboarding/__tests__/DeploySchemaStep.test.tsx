@@ -24,7 +24,7 @@ function fillCredentials() {
 
 describe('DeploySchemaStep', () => {
   it('shows Supabase URL, service key inputs and Test Connection button', () => {
-    render(<DeploySchemaStep onComplete={() => {}} />);
+    render(<DeploySchemaStep onBack={() => {}} onComplete={() => {}} />);
     expect(screen.getByLabelText(/supabase project url/i)).toBeInTheDocument();
     const keyInput = screen.getByLabelText(/service role key/i) as HTMLInputElement;
     expect(keyInput.type).toBe('password');
@@ -37,12 +37,12 @@ describe('DeploySchemaStep', () => {
       status: 200,
       json: async () => ({ ok: true }),
     });
-    render(<DeploySchemaStep onComplete={() => {}} />);
+    render(<DeploySchemaStep onBack={() => {}} onComplete={() => {}} />);
     fillCredentials();
     fireEvent.click(screen.getByRole('button', { name: /test connection/i }));
 
     expect(await screen.findByText(/tables to create/i)).toBeInTheDocument();
-    expect(screen.getByText(/reservations/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/reservations/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: /deploy schema now/i })).toBeInTheDocument();
   });
 
@@ -71,7 +71,7 @@ describe('DeploySchemaStep', () => {
     });
 
     const onComplete = jest.fn();
-    render(<DeploySchemaStep onComplete={onComplete} />);
+    render(<DeploySchemaStep onBack={() => {}} onComplete={onComplete} />);
     fillCredentials();
     fireEvent.click(screen.getByRole('button', { name: /test connection/i }));
     await screen.findByRole('button', { name: /deploy schema now/i });
@@ -111,7 +111,7 @@ describe('DeploySchemaStep', () => {
     });
 
     const onComplete = jest.fn();
-    render(<DeploySchemaStep onComplete={onComplete} />);
+    render(<DeploySchemaStep onBack={() => {}} onComplete={onComplete} />);
     fillCredentials();
     fireEvent.click(screen.getByRole('button', { name: /test connection/i }));
     await screen.findByRole('button', { name: /deploy schema now/i });

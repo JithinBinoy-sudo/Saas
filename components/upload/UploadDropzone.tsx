@@ -43,7 +43,7 @@ export function UploadDropzone() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -52,13 +52,21 @@ export function UploadDropzone() {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center',
-          dragging ? 'border-blue-400 bg-blue-50' : 'border-slate-300 bg-white'
+          'relative flex flex-col items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/40 px-6 py-10 text-center transition-colors',
+          dragging ? 'border-primary/50 bg-black/60' : 'hover:bg-black/50'
         )}
       >
-        <p className="text-sm font-medium text-slate-700">Drop your Excel file here</p>
-        <p className="text-xs text-slate-500">or</p>
-        <label className="mt-2 cursor-pointer rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+        <div className="mb-4">
+          <span className="material-symbols-outlined text-[32px] text-zinc-300">
+            note_add
+          </span>
+        </div>
+        <p className="mb-2 text-[15px] font-semibold tracking-wide text-white">
+          Drop your Excel file here
+        </p>
+        <p className="mb-3 text-[12px] font-medium text-zinc-500">or</p>
+        
+        <label className="cursor-pointer rounded-full bg-gradient-to-r from-[#85ADFF] to-[#D4A5FF] px-7 py-2.5 text-[13px] font-bold tracking-wide text-black transition-transform hover:opacity-90 active:scale-[0.98]">
           Browse files
           <input
             data-testid="upload-file-input"
@@ -71,18 +79,30 @@ export function UploadDropzone() {
             }}
           />
         </label>
-        <p className="mt-2 text-xs text-slate-500">.xlsx or .xls — up to 10,000 rows</p>
       </div>
 
+      <p className="mt-5 text-center text-[12px] font-medium text-zinc-500">
+        .xlsx or .xls — up to 10,000 rows
+      </p>
+
       {state.kind === 'uploading' && (
-        <p className="text-sm text-slate-600">Uploading {state.filename}…</p>
+        <div className="mt-6 flex items-center justify-center gap-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#85ADFF] border-t-transparent" />
+          <p className="text-sm font-medium text-zinc-300">Uploading {state.filename}…</p>
+        </div>
       )}
       {state.kind === 'error' && (
-        <p className="text-sm text-destructive" role="alert">
-          Upload failed: {state.message}
-        </p>
+        <div className="mt-6 rounded-2xl bg-rose-500/10 p-4 ring-1 ring-rose-500/20" role="alert">
+          <p className="text-center text-sm font-medium text-rose-400">
+            Upload failed: {state.message}
+          </p>
+        </div>
       )}
-      {state.kind === 'success' && <UploadResultSummary result={state.result} />}
+      {state.kind === 'success' && (
+        <div className="mt-6">
+          <UploadResultSummary result={state.result} />
+        </div>
+      )}
     </div>
   );
 }

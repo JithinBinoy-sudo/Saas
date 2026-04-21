@@ -2,6 +2,7 @@ import {
   openaiKeySchema,
   columnMappingSchema,
   byosCredentialsSchema,
+  byosDeployRequestSchema,
 } from '../onboarding';
 
 describe('openaiKeySchema', () => {
@@ -61,5 +62,24 @@ describe('byosCredentialsSchema', () => {
       supabase_service_key: 'eyJhbGciOiJIUzI1NiJ9xxxxxxxxxxxx',
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('byosDeployRequestSchema', () => {
+  it('accepts credentials without database_password', () => {
+    const result = byosDeployRequestSchema.safeParse({
+      supabase_url: 'https://abcdef.supabase.co',
+      supabase_service_key: 'eyJhbGciOiJIUzI1NiJ9xxxxxxxxxxxx',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts optional database_password', () => {
+    const result = byosDeployRequestSchema.safeParse({
+      supabase_url: 'https://abcdef.supabase.co',
+      supabase_service_key: 'eyJhbGciOiJIUzI1NiJ9xxxxxxxxxxxx',
+      database_password: 'super-secret-db-pass',
+    });
+    expect(result.success).toBe(true);
   });
 });

@@ -132,6 +132,25 @@ export async function GET(request: NextRequest) {
     data: (r.data as Record<string, string | number | null>) ?? {},
   }));
 
+  // 5.5 Query AI briefings (optional) for the selected month/range
+  let briefingsQuery = admin
+    .from('monthly_portfolio_briefings')
+    .select('revenue_month, portfolio_summary')
+    .eq('company_id', companyId)
+    .order('revenue_month', { ascending: true });
+
+  if (summaryFilter.type === 'month') {
+    briefingsQuery = briefingsQuery.eq('revenue_month', summaryFilter.month);
+  } else {
+    briefingsQuery = briefingsQuery.gte('revenue_month', summaryFilter.from).lte('revenue_month', summaryFilter.to);
+  }
+
+  const { data: briefingData } = await briefingsQuery;
+  const aiBriefings = (briefingData ?? []).map((b: Record<string, unknown>) => ({
+    revenue_month: b.revenue_month as string,
+    briefing_text: (b.portfolio_summary as string) ?? '',
+  }));
+
   // 6. Check row cap
   if (reservations.length > ROW_CAP) {
     return NextResponse.json(
@@ -144,6 +163,7 @@ export async function GET(request: NextRequest) {
   const buffer = buildReservationReport({
     summary,
     reservations,
+    aiBriefings,
     generatedAt: new Date(),
     companyName: company.name,
   });

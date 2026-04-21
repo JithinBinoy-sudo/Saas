@@ -1,14 +1,5 @@
 import type { PipelineInput } from './types';
-
-const DEFAULT_SYSTEM_PROMPT = `You are a short-term rental portfolio analyst. Given monthly performance data for a vacation rental portfolio, write a concise executive briefing (3–5 paragraphs) that:
-1. Summarises portfolio-wide KPIs (revenue, ADR, occupancy) and month-over-month trends.
-2. Highlights top-performing and underperforming properties with specific numbers.
-3. Identifies actionable insights or risks (seasonality, pricing gaps, channel dependency).
-4. Keeps a professional but accessible tone suitable for property managers.`;
-
-const DEFAULT_USER_TEMPLATE = `Analyze the following portfolio data for {{revenue_month}}:
-
-{{data}}`;
+import { DEFAULT_SYSTEM_PROMPT, DEFAULT_USER_TEMPLATE } from './defaultPrompts';
 
 function formatData(input: PipelineInput): string {
   const lines: string[] = [];
@@ -17,19 +8,35 @@ function formatData(input: PipelineInput): string {
   lines.push(`Month: ${input.revenue_month}`);
   lines.push(`Total Properties: ${input.property_count}`);
   lines.push(`Total Revenue: $${input.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  lines.push(`Average Revenue: $${input.avg_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  lines.push(`Min Revenue: $${input.min_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  lines.push(`Max Revenue: $${input.max_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
   lines.push(`Portfolio ADR: $${input.portfolio_adr.toFixed(2)}`);
   lines.push(`Total Occupied Nights: ${input.total_nights}`);
   lines.push('');
   lines.push(`=== Top Properties (${input.properties.length} of ${input.property_count}) ===`);
 
   for (const p of input.properties) {
-    const delta = p.revenue_delta !== null
-      ? ` (${p.revenue_delta >= 0 ? '+' : ''}${(p.revenue_delta * 100).toFixed(1)}% MoM)`
+    const delta = p.yield_mom_pct !== null
+      ? ` (${p.yield_mom_pct >= 0 ? '+' : ''}${(p.yield_mom_pct * 100).toFixed(1)}% MoM)`
       : '';
     lines.push(
       `- ${p.listing_nickname} [${p.listing_id}]: Revenue $${p.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, ` +
       `${p.occupied_nights} nights, ADR $${p.adr.toFixed(2)}${delta}`
     );
+  }
+
+  lines.push('');
+  lines.push('=== Channel Mix (portfolio) ===');
+  if (input.channel_mix.length === 0) {
+    lines.push('- No channel mix data available.');
+  } else {
+    for (const c of input.channel_mix) {
+      lines.push(
+        `- ${c.channel_label}: $${c.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ` +
+          `(${(c.revenue_share * 100).toFixed(1)}%)`
+      );
+    }
   }
 
   return lines.join('\n');
@@ -44,9 +51,29 @@ export function buildPrompt(
   const template = userTemplate || DEFAULT_USER_TEMPLATE;
   const data = formatData(input);
 
-  const user = template
-    .replace('{{revenue_month}}', input.revenue_month)
-    .replace('{{data}}', data);
+  const propertiesDataJson = JSON.stringify(input.properties_data);
+  const channelMixJson = JSON.stringify(input.channel_mix);
+
+  const replacements: Record<string, string> = {
+    '{{revenue_month}}': input.revenue_month,
+    '{{data}}': data,
+
+    '{{ $json.revenue_month }}': input.revenue_month,
+    '{{ $json.property_count }}': String(input.property_count),
+    '{{ $json.avg_revenue }}': input.avg_revenue.toFixed(2),
+    '{{ $json.min_revenue }}': input.min_revenue.toFixed(2),
+    '{{ $json.max_revenue }}': input.max_revenue.toFixed(2),
+
+    '{{ JSON.stringify($json.properties_data) }}': propertiesDataJson,
+    '{{ JSON.stringify($json.channel_mix) }}': channelMixJson,
+    '{{properties_data_json}}': propertiesDataJson,
+    '{{channel_mix_json}}': channelMixJson,
+  };
+
+  let user = template;
+  for (const [k, v] of Object.entries(replacements)) {
+    user = user.split(k).join(v);
+  }
 
   return { system, user };
 }

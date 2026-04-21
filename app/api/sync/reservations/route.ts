@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
 import { getDataClient } from '@/lib/getDataClient';
 
@@ -15,7 +15,7 @@ const REQUIRED_COLUMNS = [
 const UPSERT_CHUNK_SIZE = 500;
 const RATE_LIMIT_PER_DAY = 10;
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   // 1. Authenticate user and resolve company_id
   const supabase = createAppServerClient();
   const {
@@ -131,6 +131,12 @@ export async function POST(_request: NextRequest) {
       for (const [key, value] of Object.entries(row)) {
         if ((REQUIRED_COLUMNS as readonly string[]).includes(key)) {
           (required as Record<string, unknown>)[key] = value;
+        } else if (key === 'arca_id') {
+          // Legacy BYOS column name — same role as listing_id (Excel mapping uses listing_id).
+          const cur = required.listing_id;
+          if (cur === undefined || cur === null || String(cur).trim() === '') {
+            (required as Record<string, unknown>).listing_id = value;
+          }
         } else if (key === 'data') {
           // Spread existing data jsonb contents into extra — don't nest them
           if (value && typeof value === 'object' && !Array.isArray(value)) {

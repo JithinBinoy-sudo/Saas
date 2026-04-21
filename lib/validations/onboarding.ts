@@ -40,5 +40,11 @@ export const byosCredentialsSchema = z.object({
   supabase_service_key: z.string().min(20),
 });
 
+/** Deploy step: same as credentials plus optional DB password for auto-bootstrap via Postgres. */
+export const byosDeployRequestSchema = byosCredentialsSchema.extend({
+  database_password: z.string().optional(),
+});
+
 export type ColumnMappingInput = z.infer<typeof columnMappingSchema>;
 export type ByosCredentialsInput = z.infer<typeof byosCredentialsSchema>;
+export type ByosDeployRequestInput = z.infer<typeof byosDeployRequestSchema>;

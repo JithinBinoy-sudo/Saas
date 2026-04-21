@@ -3,9 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createAppBrowserClient } from '@/lib/supabase/browser';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export function LoginForm() {
   const router = useRouter();
@@ -48,42 +45,62 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="login-email">Email</Label>
-        <Input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={loading}
-        />
-        {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+    <form onSubmit={handleSubmit} className="space-y-6 relative z-10 w-full">
+      <div className="space-y-2">
+        <label htmlFor="login-email" className="block text-xs font-label text-on-surface-variant font-medium ml-1">Email</label>
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <span className="material-symbols-outlined text-on-surface-variant text-lg group-focus-within:text-primary transition-colors">mail</span>
+          </div>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            placeholder="name@company.com"
+            className="w-full bg-surface-container-lowest border border-outline-variant/15 text-on-surface rounded-lg !pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline"
+          />
+        </div>
+        {emailError && <p className="text-sm text-error ml-1">{emailError}</p>}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="login-password">Password</Label>
-        <Input
-          id="login-password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-        />
-        {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center ml-1 mb-2">
+          <label htmlFor="login-password" className="block text-xs font-label text-on-surface-variant font-medium">Password</label>
+          <button type="button" className="text-xs text-primary hover:text-secondary transition-colors underline-offset-4 hover:underline">Forgot password?</button>
+        </div>
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <span className="material-symbols-outlined text-on-surface-variant text-lg group-focus-within:text-primary transition-colors">lock</span>
+          </div>
+          <input
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            placeholder="••••••••"
+            className="w-full bg-surface-container-lowest border border-outline-variant/15 text-on-surface rounded-lg !pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline"
+          />
+        </div>
+        {passwordError && <p className="text-sm text-error ml-1">{passwordError}</p>}
       </div>
 
       {serverError && (
-        <p className="text-sm text-destructive" role="alert">
+        <p className="text-sm text-error ml-1 bg-error-container/20 p-3 rounded-lg border border-error/50" role="alert">
           {serverError}
         </p>
       )}
 
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Logging in…' : 'Log in'}
-      </Button>
+      <button type="submit" disabled={loading} className="w-full relative group mt-8 disabled:opacity-50">
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-lg blur opacity-40 group-hover:opacity-70 transition duration-500"></div>
+        <div className="flex items-center justify-center relative w-full bg-gradient-to-r from-primary to-secondary text-on-primary-fixed font-semibold py-3 rounded-lg text-sm transition-all shadow-[0px_5px_15px_rgba(133,173,255,0.2)]">
+          {loading ? 'Logging in…' : 'Log in'}
+        </div>
+      </button>
     </form>
   );
 }

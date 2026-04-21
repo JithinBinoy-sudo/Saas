@@ -1,6 +1,6 @@
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
-import { RunHistoryTable } from '@/components/history/RunHistoryTable';
-import type { PipelineRunRow } from '@/components/history/RunHistoryTable';
+import { BriefingArchive } from '@/components/history/BriefingArchive';
+import type { BriefingArchiveRow } from '@/components/history/BriefingArchive';
 
 export const metadata = {
   title: 'Portlio — Run History',
@@ -8,10 +8,18 @@ export const metadata = {
 
 const PAGE_SIZE = 20;
 
+type BriefingRow = {
+  revenue_month: string;
+  portfolio_summary: string | null;
+  generated_at: string;
+  model: string | null;
+  briefing_name: string | null;
+};
+
 export default async function HistoryPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const supabase = createAppServerClient();
   const {
@@ -31,6 +39,7 @@ export default async function HistoryPage({
   const isAdmin = userRow.role === 'admin';
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10));
   const offset = (page - 1) * PAGE_SIZE;
+  const q = (searchParams.q ?? '').trim();
 
   const admin = createAppAdminClient();
 
@@ -44,7 +53,7 @@ export default async function HistoryPage({
 
   const totalCount = count ?? 0;
 
-  const runs: PipelineRunRow[] = (runsRaw ?? []).map((r: {
+  const runRows = (runsRaw ?? []).map((r: {
     id: string;
     revenue_month: string;
     status: string;
@@ -53,32 +62,52 @@ export default async function HistoryPage({
     started_at: string;
     completed_at: string | null;
     error_message: string | null;
-  }) => ({
-    id: r.id,
-    revenue_month: r.revenue_month,
-    status: r.status as PipelineRunRow['status'],
-    model: r.model,
-    triggered_by_name: r.users?.name ?? null,
-    started_at: r.started_at,
-    completed_at: r.completed_at,
-    error_message: r.error_message,
-  }));
+  }) => r);
+
+  const months = Array.from(new Set(runRows.map((r) => r.revenue_month))).filter(Boolean);
+  const { data: briefingsRaw } = months.length
+    ? await admin
+        .from('monthly_portfolio_briefings')
+        .select('revenue_month, portfolio_summary, generated_at, model, briefing_name')
+        .eq('company_id', userRow.company_id)
+        .in('revenue_month', months)
+    : { data: [] as unknown[] };
+
+  const briefings = (briefingsRaw ?? []) as BriefingRow[];
+  const briefingByMonth = new Map<
+    string,
+    { portfolio_summary: string | null; generated_at: string; model: string | null; briefing_name: string | null }
+  >(
+    briefings.map((b) => [
+      b.revenue_month,
+      {
+        portfolio_summary: b.portfolio_summary ?? null,
+        generated_at: b.generated_at,
+        model: b.model ?? null,
+        briefing_name: b.briefing_name ?? null,
+      },
+    ])
+  );
+
+  const rows: BriefingArchiveRow[] = runRows.map((r) => {
+    const briefing = briefingByMonth.get(r.revenue_month) ?? null;
+    return {
+      id: r.id,
+      revenue_month: r.revenue_month,
+      status: r.status as BriefingArchiveRow['status'],
+      model: r.model ?? briefing?.model ?? null,
+      started_at: r.started_at,
+      completed_at: r.completed_at,
+      error_message: r.error_message,
+      generated_at: briefing?.generated_at ?? r.completed_at ?? r.started_at,
+      portfolio_summary: briefing?.portfolio_summary ?? null,
+      briefing_name: briefing?.briefing_name ?? null,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Pipeline Run History</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          All pipeline runs for your company, most recent first.
-        </p>
-      </header>
-
-      <RunHistoryTable
-        runs={runs}
-        totalCount={totalCount}
-        page={page}
-        isAdmin={isAdmin}
-      />
+      <BriefingArchive rows={rows} totalCount={totalCount} page={page} isAdmin={isAdmin} initialQuery={q} />
     </div>
   );
 }

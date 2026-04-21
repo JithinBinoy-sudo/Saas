@@ -9,6 +9,7 @@ import { buildPrompt } from '@/lib/pipeline/buildPrompt';
 import { createProvider } from '@/lib/pipeline/providers';
 
 const PROPERTY_CAP = 10;
+const PROPERTIES_DATA_CAP = 200;
 
 export async function POST(request: NextRequest) {
   // 1. Auth
@@ -19,17 +20,23 @@ export async function POST(request: NextRequest) {
   }
 
   // Parse body
-  let body: { revenue_month?: string; model?: string; preview?: boolean };
+  let body: { revenue_month?: string; model?: string; preview?: boolean; briefing_name?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { revenue_month, model, preview } = body;
+  const { revenue_month, model, preview, briefing_name } = body;
   if (!revenue_month || !model) {
     return NextResponse.json({ error: 'revenue_month and model are required' }, { status: 400 });
   }
+
+  // Preview runs (used by "Test Prompt") should not require persistence fields.
+  // For non-preview runs, allow omission and fall back to a deterministic name.
+  const resolvedBriefingName = preview
+    ? null
+    : (briefing_name?.trim() || `ARCA Portfolio Performance (${revenue_month})`);
 
   // 2. Get user row (role + company_id)
   const { data: userRow, error: userError } = await supabase
@@ -42,14 +49,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'User record not found' }, { status: 404 });
   }
 
+  if (userRow.role !== 'admin') {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
+
   // 3. Validate model
   if (!SUPPORTED_MODELS[model]) {
     return NextResponse.json({ error: `Unsupported model: ${model}` }, { status: 400 });
-  }
-
-  // 4. Admin check
-  if (userRow.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
   }
 
   const admin = createAppAdminClient();
@@ -102,32 +108,89 @@ export async function POST(request: NextRequest) {
   }
 
   // 10. Fetch top properties
-  const { data: propertyRows } = await admin
-    .from('final_reporting_gold')
-    .select('listing_id, listing_nickname, revenue, occupied_nights, adr, revenue_delta')
+  const { data: allPropertyRows } = await admin
+    .from('mom_trends_silver')
+    .select('listing_id, listing_nickname, revenue, occupied_nights, adr, prev_revenue')
     .eq('revenue_month', revenue_month)
     .eq('company_id', companyId)
-    .order('revenue', { ascending: false })
-    .limit(PROPERTY_CAP);
+    .order('revenue', { ascending: true });
 
-  const properties: PropertySummaryRow[] = (propertyRows ?? []).map((r: Record<string, unknown>) => ({
-    listing_id: r.listing_id as string,
-    listing_nickname: r.listing_nickname as string,
-    revenue: r.revenue as number,
-    occupied_nights: r.occupied_nights as number,
-    adr: r.adr as number,
-    revenue_delta: r.revenue_delta as number | null,
+  const all = (allPropertyRows ?? []).map((r: Record<string, unknown>) => {
+    const revenue = Number(r.revenue ?? 0);
+    const prev = r.prev_revenue === null || r.prev_revenue === undefined ? null : Number(r.prev_revenue);
+    const yieldMomPct = prev && prev !== 0 ? (revenue - prev) / prev : null;
+    return {
+      listing_id: String(r.listing_id ?? ''),
+      listing_nickname: String(r.listing_nickname ?? ''),
+      revenue,
+      occupied_nights: Number(r.occupied_nights ?? 0),
+      adr: Number(r.adr ?? 0),
+      prev_revenue: prev,
+      yield_mom_pct: yieldMomPct,
+    };
+  }).filter((p) => p.listing_id);
+
+  const property_count = all.length || summaryData.property_count;
+  const totalRevenueAcross = all.reduce((acc, p) => acc + p.revenue, 0);
+  const avg_revenue = property_count > 0 ? totalRevenueAcross / property_count : 0;
+  const min_revenue = property_count > 0 ? Math.min(...all.map((p) => p.revenue)) : 0;
+  const max_revenue = property_count > 0 ? Math.max(...all.map((p) => p.revenue)) : 0;
+
+  const topDesc = [...all].sort((a, b) => b.revenue - a.revenue).slice(0, PROPERTY_CAP);
+  const properties: PropertySummaryRow[] = topDesc.map((p) => ({
+    listing_id: p.listing_id,
+    listing_nickname: p.listing_nickname,
+    revenue: p.revenue,
+    occupied_nights: p.occupied_nights,
+    adr: p.adr,
+    yield_mom_pct: p.yield_mom_pct,
   }));
+
+  const properties_data =
+    all.length <= PROPERTIES_DATA_CAP
+      ? all
+      : [
+          ...all.slice(0, Math.floor(PROPERTIES_DATA_CAP / 2)),
+          ...all.slice(-Math.ceil(PROPERTIES_DATA_CAP / 2)),
+        ];
+
+  // 10b. Channel mix for this month (portfolio-wide)
+  const { data: channelRows } = await admin
+    .from('monthly_channel_mix_silver')
+    .select('channel_label, revenue')
+    .eq('company_id', companyId)
+    .eq('revenue_month', revenue_month);
+
+  type ChannelRow = { channel_label: string | null; revenue: number | null };
+  const channelAgg = new Map<string, number>();
+  for (const row of (channelRows ?? []) as ChannelRow[]) {
+    const label = row.channel_label ?? 'unknown';
+    const rev = row.revenue ?? 0;
+    channelAgg.set(label, (channelAgg.get(label) ?? 0) + rev);
+  }
+  const channelTotal = Array.from(channelAgg.values()).reduce((a, b) => a + b, 0);
+  const channel_mix = Array.from(channelAgg.entries())
+    .map(([channel_label, total_revenue]) => ({
+      channel_label,
+      total_revenue,
+      revenue_share: channelTotal > 0 ? total_revenue / channelTotal : 0,
+    }))
+    .sort((a, b) => b.total_revenue - a.total_revenue);
 
   // 11. Build pipeline input + hash
   const pipelineInput: PipelineInput = {
     company_id: userRow.company_id,
     revenue_month,
-    property_count: summaryData.property_count,
+    property_count,
     total_revenue: summaryData.total_revenue,
+    avg_revenue,
+    min_revenue,
+    max_revenue,
     portfolio_adr: summaryData.portfolio_adr,
     total_nights: summaryData.total_nights,
     properties,
+    properties_data,
+    channel_mix,
   };
 
   const dataHash = computeHash(pipelineInput);
@@ -220,6 +283,7 @@ export async function POST(request: NextRequest) {
       .upsert({
         company_id: userRow.company_id,
         revenue_month,
+        briefing_name: resolvedBriefingName,
         portfolio_summary: result.text,
         property_count: pipelineInput.property_count,
         data_hash: dataHash,

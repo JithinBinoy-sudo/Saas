@@ -10,7 +10,13 @@ function isPublicPath(pathname: string): boolean {
 
 function isAdminPath(pathname: string): boolean {
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
-  if (pathname === '/dashboard/settings/team' || pathname.startsWith('/dashboard/settings/team/')) return true;
+  // Dashboard admin hub (members use /dashboard/admin/setup only — not gated here)
+  if (pathname === '/dashboard/admin' || pathname.startsWith('/dashboard/admin/')) {
+    if (pathname === '/dashboard/admin/setup' || pathname.startsWith('/dashboard/admin/setup/')) {
+      return false;
+    }
+    return true;
+  }
   return false;
 }
 
@@ -63,27 +69,34 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const companyId: string | undefined = userRow?.company_id;
 
   let schemaDeployed = false;
+  let companyMode: string | null = null;
   if (companyId) {
     const { data: companyRow } = await supabase
       .from('companies')
-      .select('schema_deployed')
+      .select('schema_deployed, mode')
       .eq('id', companyId)
       .single();
     schemaDeployed = companyRow?.schema_deployed === true;
+    companyMode = companyRow?.mode ?? null;
   }
 
   if (pathname.startsWith('/auth')) {
+    // Allow the auth UI even when onboarding isn't complete — otherwise users get
+    // "stuck" behind forced redirects and can't switch accounts / sign out cleanly.
     if (schemaDeployed) return redirect(request, '/dashboard');
-    return redirect(request, '/onboarding');
+    return response;
   }
 
   if (isAdminPath(pathname)) {
-    if (role !== 'admin') return redirect(request, '/dashboard');
+    if (role !== 'admin') return redirect(request, '/dashboard/admin/setup');
     return response;
   }
 
   if (pathname.startsWith('/dashboard')) {
     if (!schemaDeployed) return redirect(request, '/onboarding');
+    if (companyMode === 'byos' && pathname.startsWith('/dashboard/upload')) {
+      return redirect(request, '/dashboard/settings');
+    }
     return response;
   }
 

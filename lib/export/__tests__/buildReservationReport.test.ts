@@ -54,6 +54,7 @@ describe('buildReservationReport', () => {
     const input: ReportInput = {
       summary: [baseSummary],
       reservations: [baseReservation],
+      aiBriefings: [],
       generatedAt: new Date('2026-04-17'),
       companyName: 'Test Co',
     };
@@ -68,6 +69,7 @@ describe('buildReservationReport', () => {
     const input: ReportInput = {
       summary: [baseSummary],
       reservations: [baseReservation],
+      aiBriefings: [],
       generatedAt: new Date('2026-04-17'),
       companyName: 'Test Co',
     };
@@ -92,6 +94,7 @@ describe('buildReservationReport', () => {
     const input: ReportInput = {
       summary: [],
       reservations: [baseReservation],
+      aiBriefings: [],
       generatedAt: new Date('2026-04-17'),
       companyName: 'Test Co',
     };
@@ -126,6 +129,7 @@ describe('buildReservationReport', () => {
     const input: ReportInput = {
       summary: [],
       reservations: [res1, res2],
+      aiBriefings: [],
       generatedAt: new Date('2026-04-17'),
       companyName: 'Test Co',
     };
@@ -147,6 +151,7 @@ describe('buildReservationReport', () => {
     const input: ReportInput = {
       summary: [],
       reservations: [],
+      aiBriefings: [],
       generatedAt: new Date('2026-04-17'),
       companyName: 'Test Co',
     };
@@ -160,5 +165,27 @@ describe('buildReservationReport', () => {
     const rawRows = sheetToJson(wb, 'Raw Reservations');
     expect(summaryRows).toHaveLength(0);
     expect(rawRows).toHaveLength(0);
+  });
+
+  it('adds an AI Briefing sheet when briefing exists', () => {
+    const input: ReportInput = {
+      summary: [baseSummary],
+      reservations: [baseReservation],
+      aiBriefings: [
+        { revenue_month: '2026-03-01', briefing_text: 'Great month. Revenue up.' },
+      ],
+      generatedAt: new Date('2026-04-17'),
+      companyName: 'Test Co',
+    };
+
+    const buffer = buildReservationReport(input);
+    const wb = parseWorkbook(buffer);
+
+    expect(wb.SheetNames).toEqual(['Summary', 'Raw Reservations', 'AI Briefing']);
+    const rows = sheetToJson(wb, 'AI Briefing');
+    expect(rows[0]).toMatchObject({
+      Month: '2026-03-01',
+      Briefing: 'Great month. Revenue up.',
+    });
   });
 });

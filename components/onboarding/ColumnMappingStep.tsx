@@ -9,7 +9,8 @@ type Mode = 'hosted' | 'byos';
 
 type Props = {
   mode: Mode;
-  onComplete: () => void;
+  onBack: () => void | Promise<void>;
+  onComplete: () => void | Promise<void>;
 };
 
 const REQUIRED_FIELDS = [
@@ -126,7 +127,7 @@ function parseAssignmentValue(value: string): Assignment {
   return { kind: 'custom' };
 }
 
-export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
+export function ColumnMappingStep({ mode: _mode, onBack, onComplete }: Props) {
   void _mode;
   const [headers, setHeaders] = useState<string[] | null>(null);
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
@@ -212,7 +213,7 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
         setServerError(body.error ?? 'Failed to save mapping');
         return;
       }
-      onComplete();
+      await onComplete();
     } finally {
       setSubmitting(false);
     }
@@ -221,25 +222,27 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
   const continueDisabled = !headers || missingRequired.length > 0 || submitting;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="w-full max-w-[860px]">
+      <div className="ghost-border rounded-3xl bg-white/5 p-6 backdrop-blur-xl ring-1 ring-white/10">
+        <div className="flex flex-col gap-6">
       {!headers && (
-        <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">Sample preview</h3>
+        <section className="flex flex-col gap-3 rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-white">Sample preview</h3>
             <a
               href="/api/onboarding/sample-excel"
-              className="text-sm font-medium text-blue-600 hover:underline"
+              className="text-sm font-medium text-blue-300 hover:underline"
             >
               Download Sample Excel
             </a>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-white/55">
             Column names in your file don&apos;t need to match — you&apos;ll map them in the next
             step.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600">
+              <thead className="bg-white/5 text-white/60">
                 <tr>
                   {PREVIEW_HEADERS.map((h) => (
                     <th key={h} className="px-2 py-1 font-medium">
@@ -250,9 +253,9 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
               </thead>
               <tbody>
                 {PREVIEW_ROWS.map((row, i) => (
-                  <tr key={i} className="border-t border-slate-100">
+                  <tr key={i} className="border-t border-white/5">
                     {row.map((cell, j) => (
-                      <td key={j} className="px-2 py-1 text-slate-700">
+                      <td key={j} className="px-2 py-1 text-white/80">
                         {cell}
                       </td>
                     ))}
@@ -264,8 +267,8 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
         </section>
       )}
 
-      <section className="flex flex-col gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Upload your Excel file</h3>
+      <section className="flex flex-col gap-3 rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
+        <h3 className="text-sm font-semibold text-white">Upload your Excel file</h3>
         <input
           data-testid="xlsx-file-input"
           type="file"
@@ -274,16 +277,16 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
             const f = e.target.files?.[0];
             if (f) void handleFile(f);
           }}
-          className="block text-sm"
+          className="block text-sm text-white/80 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white/85 hover:file:bg-white/15"
         />
       </section>
 
       {headers && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-slate-900">Map your columns</h3>
-          <div className="overflow-hidden rounded-lg border border-slate-200">
+          <h3 className="text-sm font-semibold text-white">Map your columns</h3>
+          <div className="overflow-hidden rounded-2xl ring-1 ring-white/10">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+              <thead className="bg-white/5 text-white/60">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">Excel column</th>
                   <th className="px-3 py-2 text-left font-medium">Map to</th>
@@ -296,12 +299,12 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
                     <tr
                       key={header}
                       data-testid={`mapping-row-${header}`}
-                      className="border-t border-slate-100"
+                      className="border-t border-white/5"
                     >
-                      <td className="px-3 py-2 font-mono text-xs text-slate-800">{header}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-white/85">{header}</td>
                       <td className="px-3 py-2">
                         <select
-                          className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                          className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/85"
                           value={assignmentValue(a)}
                           onChange={(e) => handleSelect(header, e.target.value)}
                         >
@@ -343,32 +346,50 @@ export function ColumnMappingStep({ mode: _mode, onComplete }: Props) {
             </div>
           )}
 
+          {!showErrors && missingRequired.length > 0 && (
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowErrors(true)}
+                className="h-9 rounded-full border-white/10 bg-transparent text-white/80 hover:bg-white/5 hover:text-white"
+              >
+                Show missing fields
+              </Button>
+            </div>
+          )}
+
           {serverError && (
             <p className="text-sm text-destructive" role="alert">
               {serverError}
             </p>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowErrors(true)}
-              disabled={missingRequired.length === 0}
+              onClick={onBack}
+              className="h-10 rounded-full border-white/10 bg-transparent text-white/80 hover:bg-white/5 hover:text-white"
             >
-              Show missing fields
+              Back
             </Button>
             <Button
               type="button"
               onClick={handleSubmit}
               disabled={continueDisabled}
-              className={cn(continueDisabled && 'opacity-50')}
+              className={cn(
+                'h-10 rounded-full bg-blue-300 px-6 font-medium text-slate-950 hover:bg-blue-200',
+                continueDisabled && 'opacity-50 hover:bg-blue-300'
+              )}
             >
-              {submitting ? 'Saving…' : 'Continue'}
+              {submitting ? 'Saving…' : 'Continue to Next Step'}
             </Button>
           </div>
         </section>
       )}
+        </div>
+      </div>
     </div>
   );
 }

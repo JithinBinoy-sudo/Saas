@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { BYOS_DDL } from '@/lib/schema/byos-ddl';
-import { byosCredentialsSchema } from '@/lib/validations/onboarding';
+import { isPortlioExecSqlMissingError, rpcPortlioExecSqlWithRetries } from '@/lib/schema/portlioExecSqlRpc';
+import { runByosDeployViaPostgres } from '@/lib/schema/runByosDeployViaPostgres';
+import { byosDeployRequestSchema } from '@/lib/validations/onboarding';
 import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/server';
 import { encrypt } from '@/lib/encryption';
 
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const parsed = byosCredentialsSchema.safeParse(payload);
+  const parsed = byosDeployRequestSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json(
       { errors: parsed.error.flatten().fieldErrors },
@@ -44,7 +46,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const { supabase_url, supabase_service_key } = parsed.data;
+  const { supabase_url, supabase_service_key, database_password } = parsed.data;
+  const dbPassword =
+    typeof database_password === 'string' && database_password.trim().length > 0
+      ? database_password.trim()
+      : undefined;
   const admin = createAppAdminClient();
 
   const { data: userRow, error: userError } = await admin
@@ -94,22 +100,61 @@ export async function POST(request: Request) {
 
   const runId = runRow.id as string;
 
-  const companyDb = createClient(supabase_url, supabase_service_key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
   const results: DeployResult[] = [];
   let bootstrapMissing = false;
+  let recommendDatabasePassword = false;
 
-  for (const entry of BYOS_DDL) {
-    const { error } = await companyDb.rpc('portlio_exec_sql', { stmt: entry.sql });
-    if (error) {
-      if (/portlio_exec_sql.*does not exist|function .* does not exist/i.test(error.message)) {
-        bootstrapMissing = true;
+  if (dbPassword) {
+    const pgResult = await runByosDeployViaPostgres({
+      supabaseUrl: supabase_url,
+      databasePassword: dbPassword,
+      ddl: BYOS_DDL,
+    });
+
+    if (pgResult.ok) {
+      for (const entry of BYOS_DDL) {
+        results.push({ object: entry.name, status: 'created' });
       }
-      results.push({ object: entry.name, status: 'failed', error: error.message });
+    } else if (pgResult.phase === 'ddl') {
+      const failIndex = BYOS_DDL.findIndex((e) => e.name === pgResult.entryName);
+      if (failIndex === -1) {
+        for (const entry of BYOS_DDL) {
+          results.push({ object: entry.name, status: 'failed', error: pgResult.message });
+        }
+      } else {
+        for (let i = 0; i < BYOS_DDL.length; i += 1) {
+          const entry = BYOS_DDL[i];
+          if (i < failIndex) {
+            results.push({ object: entry.name, status: 'created' });
+          } else if (i === failIndex) {
+            results.push({ object: entry.name, status: 'failed', error: pgResult.message });
+          } else {
+            results.push({ object: entry.name, status: 'failed', error: 'Skipped after previous failure' });
+          }
+        }
+      }
     } else {
-      results.push({ object: entry.name, status: 'created' });
+      const msg = pgResult.message;
+      for (const entry of BYOS_DDL) {
+        results.push({ object: entry.name, status: 'failed', error: msg });
+      }
+    }
+  } else {
+    const companyDb = createClient(supabase_url, supabase_service_key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    for (const entry of BYOS_DDL) {
+      const { error } = await rpcPortlioExecSqlWithRetries(companyDb, entry.sql);
+      if (error) {
+        if (isPortlioExecSqlMissingError(error.message)) {
+          bootstrapMissing = true;
+          recommendDatabasePassword = true;
+        }
+        results.push({ object: entry.name, status: 'failed', error: error.message });
+      } else {
+        results.push({ object: entry.name, status: 'created' });
+      }
     }
   }
 
@@ -139,6 +184,7 @@ export async function POST(request: Request) {
         supabase_url: encryptedUrl,
         supabase_service_key: encryptedKey,
         schema_deployed: true,
+        onboarding_wizard_step: 4,
       })
       .eq('id', companyId);
 
@@ -163,6 +209,7 @@ export async function POST(request: Request) {
     {
       results,
       bootstrap_missing: bootstrapMissing,
+      recommend_database_password: recommendDatabasePassword,
       schema_deployed: allSucceeded,
     },
     { status: 200 }

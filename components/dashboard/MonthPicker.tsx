@@ -2,14 +2,6 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
 type Props = {
   availableMonths: string[];
   selectedMonth: string;
@@ -27,25 +19,30 @@ export function MonthPicker({ availableMonths, selectedMonth }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  function handleChange(value: string | null) {
-    if (!value) return;
-    const params = new URLSearchParams();
-    params.set('month', value);
-    router.push(`${pathname}?${params.toString()}`);
+  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const val = e.target.value;
+    if (!val) return;
+    const target = `${pathname}?${new URLSearchParams({ month: val }).toString()}`;
+    router.push(target);
   }
 
   return (
-    <Select value={selectedMonth} onValueChange={handleChange}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue>{formatMonth(selectedMonth)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {availableMonths.map((month) => (
-          <SelectItem key={month} value={month}>
-            {formatMonth(month)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <select
+      value={selectedMonth}
+      onChange={handleChange}
+      className="appearance-none min-w-[180px] max-w-[220px] cursor-pointer rounded-full border border-outline-variant/30 bg-surface-container-lowest py-2.5 pl-4 pr-10 text-sm text-on-surface shadow-[0px_4px_20px_rgba(0,0,0,0.2)] transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
+      style={{
+        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 0.75rem center',
+        backgroundSize: '1em',
+      }}
+    >
+      {availableMonths.map((m) => (
+        <option key={m} value={m} className="bg-surface-container-high text-on-surface">
+          {formatMonth(m)}
+        </option>
+      ))}
+    </select>
   );
 }

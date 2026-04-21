@@ -104,5 +104,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
+  // Exclude Next internals, API routes, and public static landing assets.
+  // (If middleware runs on `/_next/static/*`, the app can fail to load chunks.)
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|landing/).*)'],
 };

@@ -302,12 +302,12 @@ export function BriefingArchive({ rows, totalCount, page, isAdmin, initialQuery 
                 const title = displayTitle(r);
                 const dateLabel = formatMonthLabel(r.generated_at);
                 const status = r.status;
-                const deleteAction = isAdmin ? (
+                const deleteAction = (
                   <DeleteButton
                     revenueMonth={r.revenue_month}
                     onDeleted={() => setLocalRows((prev) => prev.filter((x) => x.id !== r.id))}
                   />
-                ) : null;
+                );
 
                 const action =
                   status === 'complete' ? (

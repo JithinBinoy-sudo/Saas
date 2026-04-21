@@ -49,10 +49,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'User record not found' }, { status: 404 });
   }
 
-  if (userRow.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
-
   // 3. Validate model
   if (!SUPPORTED_MODELS[model]) {
     return NextResponse.json({ error: `Unsupported model: ${model}` }, { status: 400 });

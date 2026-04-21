@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createAppBrowserClient } from '@/lib/supabase/browser';
 
 type Props = {
   email: string;
@@ -48,8 +49,9 @@ export function AdminSetupForm({ email }: Props) {
         }
         return;
       }
-      router.refresh();
-      router.push('/dashboard/admin');
+      const supabase = createAppBrowserClient();
+      await supabase.auth.signOut();
+      router.replace('/auth?tab=login&next=/dashboard/settings');
     } finally {
       setLoading(false);
     }

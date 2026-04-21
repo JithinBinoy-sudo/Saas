@@ -10,9 +10,23 @@ type State =
   | { kind: 'success'; result: UploadResult }
   | { kind: 'error'; message: string };
 
-export function UploadDropzone() {
+type Props = {
+  redirectOnSuccessTo?: string;
+};
+
+export function UploadDropzone({ redirectOnSuccessTo = '/dashboard' }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [dragging, setDragging] = useState(false);
+
+  function redirect(to: string) {
+    const injected = (globalThis as unknown as { __portlioRedirect?: (url: string) => void })
+      .__portlioRedirect;
+    if (typeof injected === 'function') {
+      injected(to);
+      return;
+    }
+    window.location.assign(to);
+  }
 
   async function upload(file: File) {
     setState({ kind: 'uploading', filename: file.name });
@@ -27,6 +41,13 @@ export function UploadDropzone() {
       }
       const result = (await res.json()) as UploadResult;
       setState({ kind: 'success', result });
+
+      if (redirectOnSuccessTo) {
+        // Give the user a beat to see the success state, then take them to the dashboard.
+        setTimeout(() => {
+          redirect(redirectOnSuccessTo);
+        }, 650);
+      }
     } catch (err) {
       setState({
         kind: 'error',

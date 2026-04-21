@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createAppBrowserClient } from '@/lib/supabase/browser';
 
 export function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -38,7 +39,9 @@ export function LoginForm() {
         setServerError(error.message);
         return;
       }
-      router.push('/dashboard');
+      const next = params.get('next');
+      const safeNext = next && next.startsWith('/') ? next : null;
+      router.push(safeNext ?? '/dashboard');
     } finally {
       setLoading(false);
     }
@@ -98,7 +101,14 @@ export function LoginForm() {
       <button type="submit" disabled={loading} className="w-full relative group mt-8 disabled:opacity-50">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-lg blur opacity-40 group-hover:opacity-70 transition duration-500"></div>
         <div className="flex items-center justify-center relative w-full bg-gradient-to-r from-primary to-secondary text-on-primary-fixed font-semibold py-3 rounded-lg text-sm transition-all shadow-[0px_5px_15px_rgba(133,173,255,0.2)]">
-          {loading ? 'Logging in…' : 'Log in'}
+          {loading ? (
+            <>
+              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black/70" />
+              Logging in…
+            </>
+          ) : (
+            'Log in'
+          )}
         </div>
       </button>
     </form>

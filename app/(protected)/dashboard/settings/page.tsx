@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createAppServerClient } from '@/lib/supabase/server';
-import { SyncCard } from '@/components/settings/SyncCard';
-import { ByosSupabaseConnectionCard } from '@/components/settings/ByosSupabaseConnectionCard';
 
 const SECTIONS = [
   {
@@ -27,31 +25,6 @@ export default async function SettingsPage() {
 
   const role = userRow?.role ?? 'member';
 
-  // Check company mode for BYOS sync card
-  let companyMode: string | null = null;
-  let lastSync = null;
-
-  if (userRow?.company_id) {
-    const { data: companyRow } = await supabase
-      .from('companies')
-      .select('mode')
-      .eq('id', userRow.company_id)
-      .single();
-
-    companyMode = companyRow?.mode ?? null;
-
-    if (companyMode === 'byos') {
-      const { data: syncRun } = await supabase
-        .from('sync_runs')
-        .select('status, rows_synced, completed_at, started_at')
-        .eq('company_id', userRow.company_id)
-        .order('started_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      lastSync = syncRun;
-    }
-  }
-
   const visibleSections = SECTIONS.filter((s) => !s.adminOnly || role === 'admin');
 
   return (
@@ -59,7 +32,7 @@ export default async function SettingsPage() {
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold tracking-tight text-white">Settings</h1>
         <p className="text-[15px] text-zinc-400">
-          Manage your pipeline configuration
+          Manage your pipeline configuration and data exports.
         </p>
       </div>
 
@@ -86,14 +59,6 @@ export default async function SettingsPage() {
             </div>
           </Link>
         ))}
-
-        {companyMode === 'byos' && <ByosSupabaseConnectionCard />}
-
-        {companyMode === 'byos' && (
-          <div id="byos-sync">
-            <SyncCard lastSync={lastSync} />
-          </div>
-        )}
       </div>
     </div>
   );

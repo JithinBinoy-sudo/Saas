@@ -19,7 +19,7 @@ export default function UploadPage() {
           </h1>
         </div>
 
-        <UploadDropzone />
+        <UploadDropzone redirectOnSuccessTo="/dashboard" />
       </div>
     </div>
   );

@@ -1,11 +1,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadDropzone } from '../UploadDropzone';
 
+type RedirectGlobals = typeof globalThis & {
+  __portlioRedirect?: jest.Mock<void, [string]>;
+};
+
 beforeEach(() => {
   global.fetch = jest.fn();
+  jest.useFakeTimers();
+  (globalThis as RedirectGlobals).__portlioRedirect = jest.fn<void, [string]>();
 });
 
 afterEach(() => {
+  jest.useRealTimers();
+  delete (globalThis as RedirectGlobals).__portlioRedirect;
   jest.resetAllMocks();
 });
 
@@ -45,6 +53,11 @@ describe('UploadDropzone', () => {
     });
 
     expect(await screen.findByText(/3 of 3 rows uploaded/i)).toBeInTheDocument();
+
+    await waitFor(() => {
+      jest.advanceTimersByTime(650);
+      expect((globalThis as RedirectGlobals).__portlioRedirect).toHaveBeenCalledWith('/dashboard');
+    });
   });
 
   it('shows an error when the server returns non-ok', async () => {

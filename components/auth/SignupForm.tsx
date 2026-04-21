@@ -133,7 +133,14 @@ export function SignupForm() {
       <button type="submit" disabled={loading} className="w-full relative group mt-8 disabled:opacity-50">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-lg blur opacity-40 group-hover:opacity-70 transition duration-500"></div>
         <div className="flex items-center justify-center relative w-full bg-gradient-to-r from-primary to-secondary text-on-primary-fixed font-semibold py-3 rounded-lg text-sm transition-all shadow-[0px_5px_15px_rgba(133,173,255,0.2)]">
-          {loading ? 'Signing up…' : 'Sign up'}
+          {loading ? (
+            <>
+              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black/70" />
+              Signing up…
+            </>
+          ) : (
+            'Sign up'
+          )}
         </div>
       </button>
     </form>

@@ -1,7 +1,6 @@
 import { createAppServerClient } from '@/lib/supabase/server';
 import { fetchDashboardData } from '@/lib/analytics/queries';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
-import { ByosEmptyDashboard } from '@/components/dashboard/ByosEmptyDashboard';
 import { HostedEmptyDashboard } from '@/components/dashboard/HostedEmptyDashboard';
 
 export const metadata = {
@@ -44,11 +43,7 @@ export default async function DashboardPage({
 
   if (dashboardData.availableMonths.length === 0) {
     if (companyMode === 'byos') {
-      return (
-        <div className="mx-auto flex min-h-[24rem] w-full max-w-2xl flex-col items-center justify-center gap-10 py-6">
-          <ByosEmptyDashboard />
-        </div>
-      );
+      return <DashboardContent {...dashboardData} />;
     }
     return (
       <div className="mx-auto flex min-h-[24rem] w-full max-w-2xl flex-col items-center justify-center py-6">

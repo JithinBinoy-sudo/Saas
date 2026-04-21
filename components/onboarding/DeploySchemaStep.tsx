@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ type Props = {
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 type DeployPhase = 'idle' | 'running' | 'complete' | 'failed';
+type SyncPhase = 'idle' | 'running' | 'complete' | 'failed';
 
 type ObjectResult = {
   object: string;
@@ -25,6 +27,7 @@ const TABLES = BYOS_DDL.filter((e) => e.type === 'table');
 const VIEWS = BYOS_DDL.filter((e) => e.type === 'view');
 
 export function DeploySchemaStep({ onBack, onComplete }: Props) {
+  const router = useRouter();
   const [url, setUrl] = useState('');
   const [serviceKey, setServiceKey] = useState('');
   /** Optional: enables auto bootstrap + DDL over Postgres (never stored). */
@@ -36,6 +39,8 @@ export function DeploySchemaStep({ onBack, onComplete }: Props) {
   const [results, setResults] = useState<ObjectResult[]>([]);
   const [bootstrapMissing, setBootstrapMissing] = useState(false);
   const [recommendDatabasePassword, setRecommendDatabasePassword] = useState(false);
+  const [syncPhase, setSyncPhase] = useState<SyncPhase>('idle');
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   async function handleTest() {
     setTestStatus('testing');
@@ -64,6 +69,8 @@ export function DeploySchemaStep({ onBack, onComplete }: Props) {
     setDeployPhase('running');
     setBootstrapMissing(false);
     setRecommendDatabasePassword(false);
+    setSyncPhase('idle');
+    setSyncMessage(null);
     // Seed all objects as in-progress for visual feedback; server response overwrites.
     setResults(
       BYOS_DDL.map((e) => ({ object: e.name, status: 'in_progress' as const }))
@@ -106,6 +113,27 @@ export function DeploySchemaStep({ onBack, onComplete }: Props) {
 
       if (body.schema_deployed) {
         setDeployPhase('complete');
+        // After a successful deploy, run the first BYOS sync automatically so the dashboard
+        // has data immediately when the customer's Supabase already contains reservations.
+        setSyncPhase('running');
+        try {
+          const syncRes = await fetch('/api/sync/reservations', { method: 'POST' });
+          const syncBody = await syncRes.json().catch(() => ({}));
+          if (!syncRes.ok) {
+            setSyncPhase('failed');
+            setSyncMessage(syncBody.error ?? `Sync failed (${syncRes.status})`);
+          } else {
+            const rows = Number(syncBody.rows_synced ?? 0);
+            setSyncPhase('complete');
+            setSyncMessage(rows > 0 ? `Synced ${rows} rows` : 'Sync complete (0 rows found)');
+            router.refresh();
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Sync failed';
+          setSyncPhase('failed');
+          setSyncMessage(message);
+        }
+
         onComplete();
       } else {
         setDeployPhase('failed');
@@ -125,6 +153,10 @@ export function DeploySchemaStep({ onBack, onComplete }: Props) {
     if (deployPhase !== 'idle') {
       setDeployPhase('idle');
       setResults([]);
+    }
+    if (syncPhase !== 'idle') {
+      setSyncPhase('idle');
+      setSyncMessage(null);
     }
   }
 
@@ -314,6 +346,21 @@ export function DeploySchemaStep({ onBack, onComplete }: Props) {
               </li>
             ))}
           </ul>
+
+          {deployPhase === 'complete' && (
+            <div className="rounded-md border border-white/10 bg-black/30 p-3 text-sm text-white/80">
+              <p className="font-medium text-white">Syncing your reservations</p>
+              <p className="mt-1 text-xs text-white/60">
+                We&apos;ll pull rows from your Supabase <span className="font-mono text-white/70">reservations</span>{' '}
+                table into Portlio so the dashboard can populate.
+              </p>
+              <p className="mt-2 text-xs">
+                {syncPhase === 'running' && 'Sync in progress…'}
+                {syncPhase === 'complete' && (syncMessage ?? 'Sync complete')}
+                {syncPhase === 'failed' && (syncMessage ?? 'Sync failed')}
+              </p>
+            </div>
+          )}
 
           {(bootstrapMissing || recommendDatabasePassword) && (
             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

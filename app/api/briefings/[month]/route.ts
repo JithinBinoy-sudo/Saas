@@ -26,10 +26,6 @@ export async function DELETE(_request: NextRequest, { params }: { params: { mont
     return NextResponse.json({ error: 'User record not found' }, { status: 404 });
   }
 
-  if (userRow.role !== 'admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
-
   const admin = createAppAdminClient();
 
   // Delete the generated briefing for this month (drives "Recent Briefings" and the briefing detail page).

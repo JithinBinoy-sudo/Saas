@@ -6,6 +6,7 @@ import { SUPPORTED_MODELS } from '@/lib/pipeline/types';
 import { cn } from '@/lib/utils';
 import { UpdatedBriefingDetailClient } from '@/components/briefings/UpdatedBriefingDetailClient';
 import { PropertyBreakdownTableClient } from '@/components/briefings/PropertyBreakdownTableClient';
+import { ForecastBriefingTab } from '@/components/briefings/ForecastBriefingTab';
 
 export const metadata = {
   title: 'Portlio — Briefing',
@@ -320,6 +321,11 @@ export default async function BriefingPage({
             </div>
           </div>
         </section>
+
+        <ForecastBriefingTab
+          revenueMonth={params.month}
+          currentModel={briefing.model ?? 'gpt-4o'}
+        />
 
         <section className="rounded-2xl border border-white/10 bg-zinc-900/50 shadow-[0px_20px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl ring-1 ring-white/[0.06]">
           <div className="flex items-start justify-between gap-6 px-6 py-5">

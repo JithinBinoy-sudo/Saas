@@ -18,7 +18,7 @@ type Props = {
 
 type SortKey = keyof Pick<
   PropertyMonthRow,
-  'revenue' | 'occupied_nights' | 'adr' | 'revenue_delta'
+  'revenue' | 'occupied_nights' | 'adr' | 'revenue_delta' | 'risk_score'
 > | 'vs_median';
 
 type SortDir = 'asc' | 'desc';
@@ -48,6 +48,43 @@ function DeltaCell({ value }: { value: number | null }) {
     >
       {value > 0 ? '↑' : value < 0 ? '↓' : ''}
       {fmtDelta(value)}
+    </span>
+  );
+}
+
+function RiskBadge({ score }: { score: number | null }) {
+  if (score == null) {
+    return <span className="text-on-surface-variant text-sm">—</span>;
+  }
+
+  if (score <= 30) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium bg-tertiary/10 text-tertiary border-tertiary/20">
+        <span className="material-symbols-outlined text-[14px] leading-none" aria-hidden>
+          check_circle
+        </span>
+        Low
+      </span>
+    );
+  }
+
+  if (score <= 60) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium bg-secondary/10 text-secondary border-secondary/20">
+        <span className="material-symbols-outlined text-[14px] leading-none" aria-hidden>
+          warning
+        </span>
+        Medium
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium bg-error/10 text-error border-error/20">
+      <span className="material-symbols-outlined text-[14px] leading-none" aria-hidden>
+        error
+      </span>
+      High
     </span>
   );
 }
@@ -158,14 +195,15 @@ export function PropertyTable({ rows }: Props) {
         </h3>
 
         <div className="w-full overflow-x-auto -mx-1 px-1">
-          <Table className="table-fixed min-w-[720px] w-full text-sm">
+          <Table className="table-fixed min-w-[840px] w-full text-sm">
             <colgroup>
-              <col className="w-[35%]" />
-              <col className="w-[13%]" />
-              <col className="w-[13%]" />
+              <col className="w-[30%]" />
+              <col className="w-[12%]" />
+              <col className="w-[12%]" />
+              <col className="w-[9%]" />
               <col className="w-[10%]" />
+              <col className="w-[14%]" />
               <col className="w-[13%]" />
-              <col className="w-[16%]" />
             </colgroup>
             <TableHeader>
               <TableRow className="border-b border-white/5 hover:bg-transparent">
@@ -215,6 +253,14 @@ export function PropertyTable({ rows }: Props) {
                   currentSort={sortKey}
                   currentDir={sortDir}
                   onSort={handleSort}
+                  className="text-left px-2"
+                />
+                <SortableHeader
+                  label="Risk"
+                  sortKey="risk_score"
+                  currentSort={sortKey}
+                  currentDir={sortDir}
+                  onSort={handleSort}
                   className="text-left pl-2 pr-0"
                 />
               </TableRow>
@@ -248,8 +294,11 @@ export function PropertyTable({ rows }: Props) {
                     <TableCell className={cn(rowCellClass, 'px-2')}>
                       {fmtCurrency(row.adr)}
                     </TableCell>
-                    <TableCell className={cn(rowCellClass, 'pl-2 pr-0')}>
+                    <TableCell className={cn(rowCellClass, 'px-2')}>
                       <DeltaCell value={row.revenue_delta} />
+                    </TableCell>
+                    <TableCell className={cn(rowCellClass, 'pl-2 pr-0')}>
+                      <RiskBadge score={row.risk_score} />
                     </TableCell>
                   </TableRow>
                 );

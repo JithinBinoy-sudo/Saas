@@ -20,14 +20,14 @@ export async function POST(request: NextRequest) {
   }
 
   // Parse body
-  let body: { revenue_month?: string; model?: string; preview?: boolean; briefing_name?: string };
+  let body: { revenue_month?: string; model?: string; preview?: boolean; briefing_name?: string; forecastMode?: boolean };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { revenue_month, model, preview, briefing_name } = body;
+  const { revenue_month, model, preview, briefing_name, forecastMode } = body;
   if (!revenue_month || !model) {
     return NextResponse.json({ error: 'revenue_month and model are required' }, { status: 400 });
   }
@@ -173,7 +173,57 @@ export async function POST(request: NextRequest) {
     }))
     .sort((a, b) => b.total_revenue - a.total_revenue);
 
-  // 11. Build pipeline input + hash
+  // 11. Optionally fetch forecast + risk data for forecastMode
+  let forecastData: { predicted_revenue: number; lower_bound: number | null; upper_bound: number | null; model_used: string } | undefined;
+  let riskData: { listing_id: string; listing_nickname: string; risk_score: number; negative_months_in_3m: number; revenue_vs_median_pct: number | null }[] | undefined;
+  let trendDataForPrompt: { revenue_month: string; total_revenue: number }[] | undefined;
+
+  if (forecastMode) {
+    // Fetch latest forecast
+    const { data: fcRows } = await admin
+      .from('revenue_forecasts')
+      .select('predicted_revenue, lower_bound, upper_bound, model_used')
+      .eq('company_id', companyId)
+      .order('forecast_month', { ascending: false })
+      .limit(50);
+
+    if (fcRows && fcRows.length > 0) {
+      const totalPredicted = fcRows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.predicted_revenue ?? 0), 0);
+      const totalLower = fcRows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.lower_bound ?? 0), 0);
+      const totalUpper = fcRows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.upper_bound ?? 0), 0);
+      forecastData = {
+        predicted_revenue: totalPredicted,
+        lower_bound: totalLower || null,
+        upper_bound: totalUpper || null,
+        model_used: String(fcRows[0].model_used ?? 'prophet'),
+      };
+    }
+
+    // Fetch risk scores
+    const { data: riskRows } = await admin
+      .from('property_risk_score_silver')
+      .select('listing_id, listing_nickname, risk_score, negative_months_in_3m, revenue_vs_median_pct')
+      .eq('company_id', companyId)
+      .eq('revenue_month', revenue_month);
+
+    if (riskRows) {
+      riskData = riskRows as typeof riskData;
+    }
+
+    // Fetch trend data for context
+    const { data: trendRows } = await admin
+      .from('monthly_portfolio_summary')
+      .select('revenue_month, total_revenue')
+      .eq('company_id', companyId)
+      .order('revenue_month', { ascending: false })
+      .limit(12);
+
+    if (trendRows) {
+      trendDataForPrompt = (trendRows as { revenue_month: string; total_revenue: number }[]).reverse();
+    }
+  }
+
+  // 12. Build pipeline input + hash
   const pipelineInput: PipelineInput = {
     company_id: userRow.company_id,
     revenue_month,
@@ -187,6 +237,10 @@ export async function POST(request: NextRequest) {
     properties,
     properties_data,
     channel_mix,
+    forecastMode: forecastMode || false,
+    forecast: forecastData,
+    risk_data: riskData,
+    trend_data: trendDataForPrompt,
   };
 
   const dataHash = computeHash(pipelineInput);

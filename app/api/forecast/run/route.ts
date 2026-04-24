@@ -3,7 +3,11 @@ import { createAppServerClient, createAppAdminClient } from '@/lib/supabase/serv
 
 const FORECAST_SERVICE_URL = process.env.FORECAST_SERVICE_URL || '';
 
-export async function POST() {
+type Body = {
+  as_of_month?: string; // 'YYYY-MM-DD'
+};
+
+export async function POST(req: Request) {
   // 1. Auth
   const supabase = createAppServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,8 +49,16 @@ export async function POST() {
     );
   }
 
-  // 4. Portfolio-level forecast: aggregate revenue by month, keep last 6 months
+  // 4. Portfolio-level forecast: aggregate revenue by month and train as-of a target month
   const PORTFOLIO_LISTING_ID = '__PORTFOLIO__';
+  const TRAINING_MIN_MONTHS = 6;
+
+  let body: Body | null = null;
+  try {
+    body = (await req.json()) as Body;
+  } catch {
+    body = null;
+  }
 
   const byMonth = new Map<string, number>();
   for (const row of metricsData as Array<Record<string, unknown>>) {
@@ -60,9 +72,57 @@ export async function POST() {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([ds, y]) => ({ ds, y, listing_id: PORTFOLIO_LISTING_ID }));
 
-  const forecastData = portfolioSeries.slice(-6);
+  const latestMonth = portfolioSeries.length > 0 ? portfolioSeries[portfolioSeries.length - 1].ds : '';
+  const asOfMonth = String(body?.as_of_month ?? latestMonth);
 
-  // 5. Fire-and-forget POST to Railway service
+  const eligible = portfolioSeries.filter((p) => p.ds <= asOfMonth);
+  if (eligible.length < TRAINING_MIN_MONTHS) {
+    return NextResponse.json(
+      {
+        error: `Not enough history to forecast as-of ${asOfMonth}. Need at least ${TRAINING_MIN_MONTHS} months.`,
+        as_of_month: asOfMonth,
+        months_available: eligible.length,
+      },
+      { status: 400 }
+    );
+  }
+
+  // Use all available history up to asOfMonth (minimum 6 enforced above)
+  const forecastData = eligible;
+
+  // 5. Cache + dedupe: if forecasts exist (or a run is in progress), don't recompute
+  const { data: existing } = await admin
+    .from('revenue_forecasts')
+    .select('forecast_month')
+    .eq('company_id', userRow.company_id)
+    .eq('listing_id', PORTFOLIO_LISTING_ID)
+    .eq('as_of_month', asOfMonth)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    return NextResponse.json(
+      { status: 'cached', as_of_month: asOfMonth, months_used: forecastData.length },
+      { status: 200 }
+    );
+  }
+
+  // Try to acquire a per-(company, as_of_month) lock row
+  const { error: lockErr } = await admin.from('forecast_runs').insert({
+    company_id: userRow.company_id,
+    as_of_month: asOfMonth,
+    status: 'running',
+    started_at: new Date().toISOString(),
+  });
+
+  if (lockErr) {
+    // Someone else likely started it already
+    return NextResponse.json(
+      { status: 'running', as_of_month: asOfMonth },
+      { status: 202 }
+    );
+  }
+
+  // 6. Fire-and-forget POST to Railway service
   try {
     const response = await fetch(`${FORECAST_SERVICE_URL}/forecast`, {
       method: 'POST',
@@ -82,13 +142,38 @@ export async function POST() {
     }
 
     const result = await response.json();
+
+    await admin
+      .from('forecast_runs')
+      .update({
+        status: 'complete',
+        completed_at: new Date().toISOString(),
+        error: null,
+      })
+      .eq('company_id', userRow.company_id)
+      .eq('as_of_month', asOfMonth);
+
     return NextResponse.json({
       status: 'complete',
+      as_of_month: asOfMonth,
+      months_used: forecastData.length,
+      forecast_months: forecastData.length > 0 ? forecastData.map((p) => p.ds) : [],
       forecasts: result.forecasts?.length ?? 0,
       warnings: result.warnings ?? [],
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
+
+    await admin
+      .from('forecast_runs')
+      .update({
+        status: 'failed',
+        completed_at: new Date().toISOString(),
+        error: message,
+      })
+      .eq('company_id', userRow.company_id)
+      .eq('as_of_month', asOfMonth);
+
     return NextResponse.json(
       { error: `Failed to reach forecast service: ${message}` },
       { status: 502 }

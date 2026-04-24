@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { MonthPicker } from './MonthPicker';
 import { PropertyTable } from './PropertyTable';
 import { cn } from '@/lib/utils';
@@ -178,12 +179,19 @@ export function DashboardContent({
   headerRight,
   forecastSeries,
 }: Props) {
+  const router = useRouter();
   const [activeMetric, setActiveMetric] = useState<Metric>('revenue');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListingIds, setSelectedListingIds] = useState<string[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const trendSvgRef = useRef<SVGSVGElement>(null);
+  const forecastTriggerRef = useRef<string>('');
+  const [forecastUi, setForecastUi] = useState<
+    | { state: 'idle' }
+    | { state: 'generating'; message: string }
+    | { state: 'error'; message: string }
+  >({ state: 'idle' });
   const [hover, setHover] = useState<{
     x: number;
     y: number;
@@ -201,6 +209,69 @@ export function DashboardContent({
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, []);
+
+  // Auto-trigger forecast generation once per selectedMonth when missing.
+  useEffect(() => {
+    if (!selectedMonth) return;
+    if (forecastSeries && forecastSeries.length > 0) return;
+    if (forecastTriggerRef.current === selectedMonth) return;
+
+    forecastTriggerRef.current = selectedMonth;
+    const controller = new AbortController();
+    setForecastUi({ state: 'generating', message: 'Generating forecast…' });
+
+    (async () => {
+      try {
+        const res = await fetch('/api/forecast/run', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ as_of_month: selectedMonth }),
+          signal: controller.signal,
+        });
+
+        if (res.status === 202) {
+          setForecastUi({ state: 'generating', message: 'Forecast is running…' });
+        } else if (res.status === 200) {
+          // cached or complete; we'll refresh below
+          setForecastUi({ state: 'generating', message: 'Loading forecast…' });
+        } else if (res.status === 400) {
+          const body = await res.json().catch(() => ({}));
+          setForecastUi({
+            state: 'error',
+            message:
+              body?.error ??
+              'Not enough data for forecasting this month.',
+          });
+          return;
+        } else if (!res.ok) {
+          setForecastUi({
+            state: 'error',
+            message: `Forecast failed (HTTP ${res.status})`,
+          });
+          return;
+        }
+
+        // If it started or completed, refresh to pick up cached forecast rows.
+        if (res.status === 200 || res.status === 202) {
+          setTimeout(() => router.refresh(), 1500);
+        }
+      } catch {
+        setForecastUi({
+          state: 'error',
+          message: 'Could not reach forecast service.',
+        });
+      }
+    })();
+
+    return () => controller.abort();
+  }, [selectedMonth, forecastSeries, router]);
+
+  useEffect(() => {
+    if (!selectedMonth) return;
+    if (forecastSeries && forecastSeries.length > 0) {
+      setForecastUi({ state: 'idle' });
+    }
+  }, [selectedMonth, forecastSeries]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -744,6 +815,18 @@ export function DashboardContent({
                 MoM
               </span>
             </div>
+            {activeMetric === 'revenue' && !hasForecast && forecastUi.state !== 'idle' && (
+              <span className="text-xs text-on-surface-variant">
+                {forecastUi.state === 'generating'
+                  ? forecastUi.message
+                  : forecastUi.message}
+              </span>
+            )}
+            {activeMetric === 'revenue' && !hasForecast && forecastUi.state === 'idle' && (
+              <span className="text-xs text-on-surface-variant">
+                No forecast for this month yet.
+              </span>
+            )}
           </div>
 
           <div className="h-64 relative flex items-end">

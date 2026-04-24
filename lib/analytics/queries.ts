@@ -111,12 +111,14 @@ export async function fetchChannelMix(
 export async function fetchForecastSeries(
   client: SupabaseClient,
   companyId: string,
+  asOfMonth: string,
   afterMonth: string,
   limitMonths = 12,
   listingId?: string
 ): Promise<ForecastSeriesPoint[]> {
   type RevenueForecastRow = {
     listing_id: string;
+    as_of_month: string;
     forecast_month: string;
     predicted_revenue: number | string;
     lower_bound: number | string | null;
@@ -127,9 +129,10 @@ export async function fetchForecastSeries(
   let q = client
     .from('revenue_forecasts')
     .select(
-      'listing_id, forecast_month, predicted_revenue, lower_bound, upper_bound, model_used'
+      'listing_id, as_of_month, forecast_month, predicted_revenue, lower_bound, upper_bound, model_used'
     )
     .eq('company_id', companyId)
+    .eq('as_of_month', asOfMonth)
     .gt('forecast_month', afterMonth)
     .order('forecast_month', { ascending: true })
     .limit(Math.max(1, limitMonths) * 500); // defensive: many listings per month
@@ -234,7 +237,14 @@ export async function fetchDashboardData(
       fetchTrendData(client, availableMonths, companyId),
       fetchPropertyRows(client, selectedMonth, companyId),
       fetchChannelMix(client, companyId),
-      fetchForecastSeries(client, companyId, selectedMonth, 3, '__PORTFOLIO__'),
+      fetchForecastSeries(
+        client,
+        companyId,
+        selectedMonth,
+        selectedMonth,
+        3,
+        '__PORTFOLIO__'
+      ),
     ]);
 
   return {

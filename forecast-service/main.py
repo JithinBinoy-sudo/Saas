@@ -87,12 +87,14 @@ async def forecast(req: ForecastRequest):
         listings.setdefault(dp.listing_id, []).append({"ds": dp.ds, "y": dp.y})
 
     all_forecasts: list[ForecastResult] = []
+    db_rows: list[dict] = []
     warnings: list[str] = []
 
     for listing_id, points in listings.items():
         # Sort by date
         points.sort(key=lambda x: x["ds"])
         n_months = len(points)
+        as_of_month = points[-1]["ds"] if points else None
 
         if n_months < 3:
             warnings.append(
@@ -139,26 +141,26 @@ async def forecast(req: ForecastRequest):
                     model_used=model_name,
                 )
                 all_forecasts.append(forecast_item)
+                db_rows.append(
+                    {
+                        "company_id": req.company_id,
+                        "listing_id": listing_id,
+                        "as_of_month": as_of_month,
+                        "forecast_month": forecast_item.forecast_month,
+                        "predicted_revenue": forecast_item.predicted_revenue,
+                        "lower_bound": forecast_item.lower_bound,
+                        "upper_bound": forecast_item.upper_bound,
+                        "model_used": forecast_item.model_used,
+                        "generated_at": datetime.utcnow().isoformat(),
+                    }
+                )
 
     # Write to Supabase
-    if all_forecasts:
+    if db_rows:
         try:
             supabase = get_supabase()
-            rows = [
-                {
-                    "company_id": req.company_id,
-                    "listing_id": f.listing_id,
-                    "forecast_month": f.forecast_month,
-                    "predicted_revenue": f.predicted_revenue,
-                    "lower_bound": f.lower_bound,
-                    "upper_bound": f.upper_bound,
-                    "model_used": f.model_used,
-                    "generated_at": datetime.utcnow().isoformat(),
-                }
-                for f in all_forecasts
-            ]
-            supabase.table("revenue_forecasts").upsert(rows).execute()
-            logger.info(f"Wrote {len(rows)} forecast rows to Supabase")
+            supabase.table("revenue_forecasts").upsert(db_rows).execute()
+            logger.info(f"Wrote {len(db_rows)} forecast rows to Supabase")
         except Exception as e:
             logger.error(f"Failed to write forecasts to Supabase: {e}")
             warnings.append(f"DB write failed: {str(e)}")

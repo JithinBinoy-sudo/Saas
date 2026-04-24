@@ -3,7 +3,7 @@ import type {
   MonthlyPortfolioSummary,
   PropertyMonthRow,
   ChannelMixRow,
-  ForecastPoint,
+  ForecastSeriesPoint,
   DashboardData,
 } from './types';
 
@@ -107,58 +107,82 @@ export async function fetchChannelMix(
   return data as ChannelMixRow[];
 }
 
-/** Fetch the latest forecast point (portfolio-level sum of predicted revenues). */
-export async function fetchForecastPoint(
+/** Fetch month-by-month forecast series (portfolio-level sum of predicted revenues). */
+export async function fetchForecastSeries(
   client: SupabaseClient,
-  companyId: string
-): Promise<ForecastPoint | null> {
-  // Get the most recent forecast month for this company
+  companyId: string,
+  afterMonth: string,
+  limitMonths = 12
+): Promise<ForecastSeriesPoint[]> {
+  type RevenueForecastRow = {
+    forecast_month: string;
+    predicted_revenue: number | string;
+    lower_bound: number | string | null;
+    upper_bound: number | string | null;
+    model_used: 'prophet' | 'arima' | string;
+  };
+
   const { data, error } = await client
     .from('revenue_forecasts')
     .select('forecast_month, predicted_revenue, lower_bound, upper_bound, model_used')
     .eq('company_id', companyId)
-    .order('forecast_month', { ascending: false });
+    .gt('forecast_month', afterMonth)
+    .order('forecast_month', { ascending: true })
+    .limit(Math.max(1, limitMonths) * 500); // defensive: many listings per month
 
-  if (error || !data || data.length === 0) return null;
+  if (error || !data || data.length === 0) return [];
 
-  // Find the latest forecast_month
-  const latestMonth = data[0].forecast_month;
-
-  // Sum across all listings for that month (portfolio-level forecast)
-  const monthRows = data.filter(
-    (r: { forecast_month: string }) => r.forecast_month === latestMonth
-  );
-
-  let totalPredicted = 0;
-  let totalLower = 0;
-  let totalUpper = 0;
-  let hasLower = true;
-  let hasUpper = true;
-  let modelUsed: 'prophet' | 'arima' = 'prophet';
-
-  for (const r of monthRows) {
-    totalPredicted += Number(r.predicted_revenue);
-    if (r.lower_bound != null) {
-      totalLower += Number(r.lower_bound);
-    } else {
-      hasLower = false;
+  // Group by month, sum across listings for a portfolio-level forecast series
+  const byMonth = new Map<
+    string,
+    {
+      totalPredicted: number;
+      totalLower: number;
+      totalUpper: number;
+      hasLower: boolean;
+      hasUpper: boolean;
+      modelUsed: 'prophet' | 'arima';
     }
-    if (r.upper_bound != null) {
-      totalUpper += Number(r.upper_bound);
-    } else {
-      hasUpper = false;
-    }
-    // Use the model from the majority — simplified to use the first row's model
-    modelUsed = r.model_used as 'prophet' | 'arima';
+  >();
+
+  for (const r of data as RevenueForecastRow[]) {
+    const m = String(r.forecast_month);
+    const cur =
+      byMonth.get(m) ??
+      ({
+        totalPredicted: 0,
+        totalLower: 0,
+        totalUpper: 0,
+        hasLower: true,
+        hasUpper: true,
+        modelUsed: (r.model_used as 'prophet' | 'arima') ?? 'prophet',
+      } as const);
+
+    const next = {
+      totalPredicted: cur.totalPredicted + Number(r.predicted_revenue ?? 0),
+      totalLower:
+        r.lower_bound != null ? cur.totalLower + Number(r.lower_bound) : cur.totalLower,
+      totalUpper:
+        r.upper_bound != null ? cur.totalUpper + Number(r.upper_bound) : cur.totalUpper,
+      hasLower: cur.hasLower && r.lower_bound != null,
+      hasUpper: cur.hasUpper && r.upper_bound != null,
+      modelUsed: cur.modelUsed ?? ((r.model_used as 'prophet' | 'arima') ?? 'prophet'),
+    };
+    byMonth.set(m, next);
   }
 
-  return {
-    month: latestMonth,
-    predicted_revenue: totalPredicted,
-    lower_bound: hasLower ? totalLower : null,
-    upper_bound: hasUpper ? totalUpper : null,
-    model_used: modelUsed,
-  };
+  const series = Array.from(byMonth.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(0, Math.max(1, limitMonths))
+    .map(([month, agg]) => ({
+      month,
+      predicted_revenue: agg.totalPredicted,
+      lower_bound: agg.hasLower ? agg.totalLower : null,
+      upper_bound: agg.hasUpper ? agg.totalUpper : null,
+      model_used: agg.modelUsed,
+    }));
+
+  return series;
 }
 
 /** Convenience: fetch everything the dashboard needs in parallel. */
@@ -178,7 +202,7 @@ export async function fetchDashboardData(
       trendData: [],
       properties: [],
       channelMix: [],
-      forecastPoint: null,
+      forecastSeries: [],
     };
   }
 
@@ -191,7 +215,7 @@ export async function fetchDashboardData(
   const priorMonth =
     priorIdx < availableMonths.length ? availableMonths[priorIdx] : null;
 
-  const [summary, priorSummary, trendData, properties, channelMix, forecastPoint] =
+  const [summary, priorSummary, trendData, properties, channelMix, forecastSeries] =
     await Promise.all([
       fetchMonthlySummary(client, selectedMonth, companyId),
       priorMonth
@@ -200,7 +224,7 @@ export async function fetchDashboardData(
       fetchTrendData(client, availableMonths, companyId),
       fetchPropertyRows(client, selectedMonth, companyId),
       fetchChannelMix(client, companyId),
-      fetchForecastPoint(client, companyId),
+      fetchForecastSeries(client, companyId, selectedMonth, 3),
     ]);
 
   return {
@@ -211,6 +235,6 @@ export async function fetchDashboardData(
     trendData,
     properties,
     channelMix,
-    forecastPoint,
+    forecastSeries,
   };
 }

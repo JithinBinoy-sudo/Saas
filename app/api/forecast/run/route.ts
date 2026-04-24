@@ -45,12 +45,21 @@ export async function POST() {
     );
   }
 
-  // 4. Transform into the shape the Railway service expects
-  const forecastData = metricsData.map((row: Record<string, unknown>) => ({
-    ds: row.revenue_month as string,
-    y: Number(row.revenue ?? 0),
-    listing_id: row.listing_id as string,
-  }));
+  // 4. Limit training window to most recent 6 months per listing
+  const byListing = new Map<string, { ds: string; y: number; listing_id: string }[]>();
+  for (const row of metricsData as Array<Record<string, unknown>>) {
+    const listing_id = String(row.listing_id ?? '');
+    if (!listing_id) continue;
+    const ds = String(row.revenue_month ?? '');
+    const y = Number(row.revenue ?? 0);
+    const arr = byListing.get(listing_id) ?? [];
+    arr.push({ ds, y, listing_id });
+    byListing.set(listing_id, arr);
+  }
+
+  const forecastData = Array.from(byListing.values()).flatMap((rows) =>
+    rows.slice(-6)
+  );
 
   // 5. Fire-and-forget POST to Railway service
   try {

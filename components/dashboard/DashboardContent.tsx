@@ -136,19 +136,22 @@ function scalePortfolioTrend(
 function createSmoothPath(
   data: number[],
   width: number,
-  height: number
+  height: number,
+  min: number,
+  range: number,
+  reserveCount: number
 ): {
   path: string;
   fillPath: string;
   points: { x: number; y: number }[];
 } {
   if (data.length < 2) return { path: '', fillPath: '', points: [] };
-  const min = Math.min(...data) * 0.9;
-  const max = Math.max(...data) * 1.1;
-  const range = max - min || 1;
+
+  const totalPoints = Math.max(2, data.length + Math.max(0, reserveCount));
+  const denominator = Math.max(1, totalPoints - 1);
 
   const points = data.map((val, i) => ({
-    x: (i / (data.length - 1)) * width,
+    x: (i / denominator) * width,
     y: height - ((val - min) / range) * height,
   }));
 
@@ -160,7 +163,7 @@ function createSmoothPath(
   });
 
   const path = pathCmds.join(' ');
-  const fillPath = `${path} L ${width},${height} L 0,${height} Z`;
+  const fillPath = `${path} L ${points[points.length - 1].x},${height} L 0,${height} Z`;
 
   return { path, fillPath, points };
 }
@@ -173,13 +176,21 @@ export function DashboardContent({
   trendData,
   properties,
   headerRight,
-  forecastPoint,
+  forecastSeries,
 }: Props) {
   const [activeMetric, setActiveMetric] = useState<Metric>('revenue');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListingIds, setSelectedListingIds] = useState<string[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  const trendSvgRef = useRef<SVGSVGElement>(null);
+  const [hover, setHover] = useState<{
+    x: number;
+    y: number;
+    label: string;
+    valueLabel: string;
+    isForecast: boolean;
+  } | null>(null);
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
@@ -304,43 +315,115 @@ export function DashboardContent({
   const MoM =
     view.prior > 0 ? ((view.current - view.prior) / view.prior) * 100 : null;
 
+  const forecastCount =
+    activeMetric === 'revenue' ? (forecastSeries?.length ?? 0) : 0;
+  const hasForecast = Boolean(forecastCount > 0 && view.values.length >= 2);
+
+  let rawMin = Math.min(...view.values);
+  let rawMax = Math.max(...view.values);
+  if (hasForecast) {
+    for (const p of forecastSeries) {
+      rawMax = Math.max(
+        rawMax,
+        p.predicted_revenue,
+        p.upper_bound ?? -Infinity
+      );
+      rawMin = Math.min(rawMin, p.predicted_revenue, p.lower_bound ?? Infinity);
+    }
+  }
+  const chartMin = rawMin * 0.9;
+  const chartMax = rawMax * 1.1;
+  const chartRange = chartMax - chartMin || 1;
+
   const { path: trendPath, fillPath: trendFill, points: trendPoints } = useMemo(
-    () => createSmoothPath(view.values, 1000, 200),
-    [view.values]
+    () =>
+      createSmoothPath(view.values, 1000, 200, chartMin, chartRange, forecastCount),
+    [view.values, chartMin, chartRange, forecastCount]
   );
   const lastPoint =
     trendPoints.length > 0
       ? trendPoints[trendPoints.length - 1]
       : { x: 1000, y: 100 };
 
-  // Compute forecast point coordinates on the SVG (only for revenue metric)
   const forecastCoords = useMemo(() => {
-    if (!forecastPoint || activeMetric !== 'revenue' || view.values.length < 2) return null;
+    if (!hasForecast) return [];
+    const totalPoints = Math.max(2, view.values.length + forecastCount);
+    const denom = Math.max(1, totalPoints - 1);
 
-    const allValues = view.values;
-    const min = Math.min(...allValues) * 0.9;
-    const max = Math.max(...allValues) * 1.1;
-    const range = max - min || 1;
+    return forecastSeries.slice(0, forecastCount).map((p, idx) => {
+      const i = view.values.length - 1 + (idx + 1);
+      const x = (i / denom) * 1000;
+      const y = 200 - ((p.predicted_revenue - chartMin) / chartRange) * 200;
+      const lowerY =
+        p.lower_bound != null
+          ? 200 - ((p.lower_bound - chartMin) / chartRange) * 200
+          : null;
+      const upperY =
+        p.upper_bound != null
+          ? 200 - ((p.upper_bound - chartMin) / chartRange) * 200
+          : null;
+      return { x, y, lowerY, upperY, point: p };
+    });
+  }, [hasForecast, view.values.length, forecastCount, forecastSeries, chartMin, chartRange]);
 
-    // X position: one step beyond the last point
-    const stepX = 1000 / (allValues.length - 1);
-    const fcX = lastPoint.x + stepX;
+  const hoverCandidates = useMemo(() => {
+    const base = chartTrendData.map((d, i) => ({
+      x: trendPoints[i]?.x ?? 0,
+      y: trendPoints[i]?.y ?? 0,
+      label: new Date(d.revenue_month).toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }),
+      valueLabel:
+        activeMetric === 'revenue'
+          ? fmtCurrencyLong(d.total_revenue)
+          : activeMetric === 'adr'
+            ? fmtCurrencyLong(d.portfolio_adr)
+            : fmtPercent(
+                occupancyFor(d.total_nights, d.property_count, d.revenue_month)
+              ),
+      isForecast: false,
+    }));
 
-    // Y position: map predicted_revenue to the same scale
-    const fcY = 200 - ((forecastPoint.predicted_revenue - min) / range) * 200;
+    if (!hasForecast) return base;
+    const fc = forecastCoords.map((c) => ({
+      x: c.x,
+      y: c.y,
+      label: new Date(c.point.month).toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }),
+      valueLabel: fmtCurrencyLong(c.point.predicted_revenue),
+      isForecast: true,
+    }));
+    return [...base, ...fc];
+  }, [chartTrendData, trendPoints, forecastCoords, hasForecast, activeMetric]);
 
-    // Confidence band Y positions
-    let lowerY: number | null = null;
-    let upperY: number | null = null;
-    if (forecastPoint.lower_bound != null) {
-      lowerY = 200 - ((forecastPoint.lower_bound - min) / range) * 200;
+  function onTrendMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    if (!trendSvgRef.current || hoverCandidates.length === 0) return;
+    const rect = trendSvgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 1000;
+
+    let best = hoverCandidates[0];
+    let bestDist = Math.abs(best.x - x);
+    for (let i = 1; i < hoverCandidates.length; i++) {
+      const d = Math.abs(hoverCandidates[i].x - x);
+      if (d < bestDist) {
+        best = hoverCandidates[i];
+        bestDist = d;
+      }
     }
-    if (forecastPoint.upper_bound != null) {
-      upperY = 200 - ((forecastPoint.upper_bound - min) / range) * 200;
-    }
 
-    return { x: Math.min(fcX, 1050), y: fcY, lowerY, upperY };
-  }, [forecastPoint, activeMetric, view.values, lastPoint.x]);
+    setHover({
+      x: best.x,
+      y: best.y,
+      label: best.label,
+      valueLabel: best.valueLabel,
+      isForecast: best.isForecast,
+    });
+  }
 
   const searchMatches = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -385,8 +468,7 @@ export function DashboardContent({
       )
     : 0;
 
-  const valueMax = Math.max(...view.values);
-  const valueMin = Math.min(...view.values);
+
 
   function toggleListingSelection(listingId: string) {
     setSelectedListingIds((prev) =>
@@ -666,10 +748,10 @@ export function DashboardContent({
 
           <div className="h-64 relative flex items-end">
             <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-on-surface-variant pb-8 pr-4 border-r border-white/5">
-              <span>{view.axisFmt(valueMax * 1.1)}</span>
-              <span>{view.axisFmt(valueMax * 0.73)}</span>
-              <span>{view.axisFmt(valueMax * 0.36)}</span>
-              <span>{view.axisFmt(valueMin * 0.9)}</span>
+              <span>{view.axisFmt(chartMax)}</span>
+              <span>{view.axisFmt(chartMin + chartRange * 0.666)}</span>
+              <span>{view.axisFmt(chartMin + chartRange * 0.333)}</span>
+              <span>{view.axisFmt(chartMin)}</span>
             </div>
 
             <div className="w-full h-full pl-12 relative pb-8">
@@ -681,9 +763,12 @@ export function DashboardContent({
               </div>
 
               <svg
+                ref={trendSvgRef}
                 className="w-full h-full overflow-visible"
                 preserveAspectRatio="none"
                 viewBox="0 0 1000 200"
+                onMouseMove={onTrendMouseMove}
+                onMouseLeave={() => setHover(null)}
               >
                 <defs>
                   <linearGradient
@@ -713,6 +798,9 @@ export function DashboardContent({
                   filter="url(#glow-line)"
                 />
 
+                {/* Hover target */}
+                <rect x="0" y="0" width="1000" height="200" fill="transparent" />
+
                 {trendPoints.length > 0 && (
                   <g transform={`translate(${lastPoint.x}, ${lastPoint.y})`}>
                     <circle
@@ -733,7 +821,7 @@ export function DashboardContent({
                       className="glow-point opacity-50"
                     />
                     <rect
-                      x="-35"
+                      x={hasForecast ? -80 : -35}
                       y="-40"
                       width="70"
                       height="24"
@@ -743,7 +831,7 @@ export function DashboardContent({
                       strokeWidth="1"
                     />
                     <text
-                      x="0"
+                      x={hasForecast ? -45 : 0}
                       y="-24"
                       textAnchor="middle"
                       fill="#f9f5f8"
@@ -757,95 +845,163 @@ export function DashboardContent({
                 )}
 
                 {/* Forecast overlay */}
-                {forecastCoords && forecastPoint && (
+                {forecastCoords.length > 0 && (
                   <g>
-                    {/* Confidence band */}
-                    {forecastCoords.lowerY != null && forecastCoords.upperY != null && (
-                      <rect
-                        x={forecastCoords.x - 15}
-                        y={Math.min(forecastCoords.upperY, forecastCoords.lowerY)}
-                        width={30}
-                        height={Math.abs(forecastCoords.lowerY - forecastCoords.upperY)}
-                        rx={4}
-                        fill="#adaaad"
-                        fillOpacity={0.08}
-                      />
-                    )}
-
-                    {/* Dashed connector line */}
-                    <line
-                      x1={lastPoint.x}
-                      y1={lastPoint.y}
-                      x2={forecastCoords.x}
-                      y2={forecastCoords.y}
+                    {/* Dashed connector path through forecast points */}
+                    <path
+                      d={[
+                        `M ${lastPoint.x},${lastPoint.y}`,
+                        ...forecastCoords.map((c) => `L ${c.x},${c.y}`),
+                      ].join(' ')}
+                      fill="none"
                       stroke="#adaaad"
                       strokeWidth={2}
                       strokeDasharray="6 4"
                       strokeLinecap="round"
                     />
 
-                    {/* Forecast point — hollow dashed circle + inner dot */}
-                    <circle
-                      cx={forecastCoords.x}
-                      cy={forecastCoords.y}
-                      r={8}
-                      fill="none"
-                      stroke="#adaaad"
-                      strokeWidth={2}
-                      strokeDasharray="4 3"
-                    />
-                    <circle
-                      cx={forecastCoords.x}
-                      cy={forecastCoords.y}
-                      r={3}
-                      fill="#adaaad"
-                    />
+                    {forecastCoords.map((c, idx) => (
+                      <g key={idx}>
+                        {/* Confidence band */}
+                        {c.lowerY != null && c.upperY != null && (
+                          <rect
+                            x={c.x - 15}
+                            y={Math.min(c.upperY, c.lowerY)}
+                            width={30}
+                            height={Math.abs(c.lowerY - c.upperY)}
+                            rx={4}
+                            fill="#adaaad"
+                            fillOpacity={0.08}
+                          />
+                        )}
 
-                    {/* Label chip */}
-                    <rect
-                      x={forecastCoords.x - 45}
-                      y={forecastCoords.y - 40}
-                      width={90}
-                      height={22}
-                      rx={10}
-                      fill="#262528"
-                      stroke="#48474a"
-                      strokeWidth={1}
+                        {/* Forecast point */}
+                        <circle
+                          cx={c.x}
+                          cy={c.y}
+                          r={8}
+                          fill="none"
+                          stroke="#adaaad"
+                          strokeWidth={2}
+                          strokeDasharray="4 3"
+                        />
+                        <circle cx={c.x} cy={c.y} r={3} fill="#adaaad" />
+
+                        {/* Label chip only on first forecast point */}
+                        {idx === 0 && (
+                          <>
+                            <rect
+                              x={c.x - 90}
+                              y={c.y - 40}
+                              width={90}
+                              height={22}
+                              rx={10}
+                              fill="#262528"
+                              stroke="#48474a"
+                              strokeWidth={1}
+                            />
+                            <text
+                              x={c.x - 45}
+                              y={c.y - 25}
+                              textAnchor="middle"
+                              fill="#adaaad"
+                              fontFamily="Inter"
+                              fontSize={10}
+                            >
+                              Forecast (
+                              {c.point.model_used === 'prophet' ? 'Prophet' : 'ARIMA'})
+                            </text>
+                          </>
+                        )}
+                      </g>
+                    ))}
+                  </g>
+                )}
+
+                {/* Hover marker */}
+                {hover && (
+                  <g>
+                    <line
+                      x1={hover.x}
+                      y1={0}
+                      x2={hover.x}
+                      y2={200}
+                      stroke="#ffffff"
+                      strokeOpacity={0.08}
+                      strokeWidth={2}
                     />
-                    <text
-                      x={forecastCoords.x}
-                      y={forecastCoords.y - 25}
-                      textAnchor="middle"
-                      fill="#adaaad"
-                      fontFamily="Inter"
-                      fontSize={10}
-                    >
-                      Forecast ({forecastPoint.model_used === 'prophet' ? 'Prophet' : 'ARIMA'})
-                    </text>
+                    <circle
+                      cx={hover.x}
+                      cy={hover.y}
+                      r={6}
+                      fill="#0e0e10"
+                      stroke={hover.isForecast ? '#adaaad' : '#c180ff'}
+                      strokeWidth={3}
+                    />
                   </g>
                 )}
               </svg>
 
-              <div className="absolute bottom-0 left-12 w-full flex justify-between text-xs text-on-surface-variant px-4">
-                {chartTrendData.map((d, i) => (
-                  <span key={i}>
-                    {new Date(d.revenue_month).toLocaleDateString('en-US', {
-                      month: 'short',
-                      timeZone: 'UTC',
-                    })}
-                  </span>
-                ))}
-              </div>
-
-              {/* Forecast legend */}
-              {forecastPoint && activeMetric === 'revenue' && (
-                <div className="absolute bottom-0 right-4 flex items-center gap-2 text-xs text-on-surface-variant">
-                  <svg width="20" height="2" className="inline-block">
-                    <line x1="0" y1="1" x2="20" y2="1" stroke="#adaaad" strokeWidth="2" strokeDasharray="4 3" />
-                  </svg>
-                  <span>Forecast</span>
+              {hover && (
+                <div
+                  className="pointer-events-none absolute top-3 z-20 rounded-xl border border-white/10 bg-zinc-950/90 px-3 py-2 text-xs text-zinc-100 shadow-[0px_20px_40px_rgba(0,0,0,0.5)]"
+                  style={{
+                    left: `calc(12px + ${(hover.x / 1000) * 100}% )`,
+                    transform: 'translateX(-50%)',
+                    maxWidth: 240,
+                  }}
+                >
+                  <div className="text-zinc-300">{hover.label}</div>
+                  <div className="mt-0.5 flex items-center gap-2">
+                    <span className={hover.isForecast ? 'text-zinc-400' : 'text-zinc-100'}>
+                      {hover.valueLabel}
+                    </span>
+                    {hover.isForecast && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
+                        Forecast
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
+
+              <div className="absolute bottom-0 left-12 right-0 h-6">
+                {chartTrendData.map((d, i) => {
+                  const totalPoints = Math.max(
+                    2,
+                    chartTrendData.length + (hasForecast ? forecastCount : 0)
+                  );
+                  const denom = Math.max(1, totalPoints - 1);
+                  const pct = (i / denom) * 100;
+                  return (
+                    <span key={i} className="absolute text-xs text-on-surface-variant transform -translate-x-1/2 whitespace-nowrap" style={{ left: `${pct}%` }}>
+                      {new Date(d.revenue_month).toLocaleDateString('en-US', {
+                        month: 'short',
+                        timeZone: 'UTC',
+                      })}
+                    </span>
+                  );
+                })}
+                {hasForecast &&
+                  forecastSeries.slice(0, forecastCount).map((p, idx) => {
+                    const totalPoints = Math.max(2, chartTrendData.length + forecastCount);
+                    const denom = Math.max(1, totalPoints - 1);
+                    const i = chartTrendData.length - 1 + (idx + 1);
+                    const pct = (i / denom) * 100;
+                    return (
+                      <span
+                        key={p.month}
+                        className="absolute text-xs font-medium text-primary transform -translate-x-1/2 whitespace-nowrap"
+                        style={{ left: `${pct}%` }}
+                      >
+                        {new Date(p.month).toLocaleDateString('en-US', {
+                          month: 'short',
+                          timeZone: 'UTC',
+                        })}
+                      </span>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </div>

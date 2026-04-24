@@ -36,6 +36,8 @@ export type ForecastPoint = {
   model_used: 'prophet' | 'arima';
 };
 
+export type ForecastSeriesPoint = ForecastPoint;
+
 export type DashboardData = {
   availableMonths: string[]; // sorted descending, 'YYYY-MM-DD'
   selectedMonth: string; // 'YYYY-MM-DD'
@@ -44,5 +46,5 @@ export type DashboardData = {
   trendData: MonthlyPortfolioSummary[]; // last 12 months for chart
   properties: PropertyMonthRow[];
   channelMix: ChannelMixRow[];
-  forecastPoint: ForecastPoint | null;
+  forecastSeries: ForecastSeriesPoint[]; // month-by-month, ascending
 };

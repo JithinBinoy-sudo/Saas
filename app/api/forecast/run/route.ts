@@ -90,20 +90,41 @@ export async function POST(req: Request) {
   // Use all available history up to asOfMonth (minimum 6 enforced above)
   const forecastData = eligible;
 
-  // 5. Cache + dedupe: if forecasts exist (or a run is in progress), don't recompute
+  // 5. Cache + dedupe: if valid forecasts exist, don't recompute
   const { data: existing } = await admin
     .from('revenue_forecasts')
-    .select('forecast_month')
+    .select('forecast_month, predicted_revenue')
     .eq('company_id', userRow.company_id)
     .eq('listing_id', PORTFOLIO_LISTING_ID)
-    .eq('as_of_month', asOfMonth)
-    .limit(1);
+    .eq('as_of_month', asOfMonth);
 
-  if (existing && existing.length > 0) {
+  const hasValidCache =
+    existing &&
+    existing.length > 0 &&
+    existing.some((r: { predicted_revenue: number }) => r.predicted_revenue > 0);
+
+  if (hasValidCache) {
     return NextResponse.json(
       { status: 'cached', as_of_month: asOfMonth, months_used: forecastData.length },
       { status: 200 }
     );
+  }
+
+  // If only zero-valued forecasts exist, delete them so we regenerate
+  if (existing && existing.length > 0 && !hasValidCache) {
+    await admin
+      .from('revenue_forecasts')
+      .delete()
+      .eq('company_id', userRow.company_id)
+      .eq('listing_id', PORTFOLIO_LISTING_ID)
+      .eq('as_of_month', asOfMonth);
+
+    // Also clear old lock so we can re-run
+    await admin
+      .from('forecast_runs')
+      .delete()
+      .eq('company_id', userRow.company_id)
+      .eq('as_of_month', asOfMonth);
   }
 
   // Try to acquire a per-(company, as_of_month) lock row
@@ -193,6 +214,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         company_id: userRow.company_id,
         data: forecastData,
+        as_of_month: asOfMonth,
       }),
     });
 

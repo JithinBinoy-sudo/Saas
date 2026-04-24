@@ -50,6 +50,7 @@ class DataPoint(BaseModel):
 class ForecastRequest(BaseModel):
     company_id: str
     data: list[DataPoint]
+    as_of_month: Optional[str] = None
 
 
 class ForecastResult(BaseModel):
@@ -94,7 +95,7 @@ async def forecast(req: ForecastRequest):
         # Sort by date
         points.sort(key=lambda x: x["ds"])
         n_months = len(points)
-        as_of_month = points[-1]["ds"] if points else None
+        as_of_month = req.as_of_month or (points[-1]["ds"] if points else None)
 
         if n_months < 3:
             warnings.append(

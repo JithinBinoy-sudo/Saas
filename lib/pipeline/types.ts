@@ -39,6 +39,21 @@ export type ChannelMixRow = {
   revenue_share: number;
 };
 
+export type RiskScoreRow = {
+  listing_id: string;
+  listing_nickname: string;
+  risk_score: number;
+  negative_months_in_3m: number;
+  revenue_vs_median_pct: number | null;
+};
+
+export type ForecastData = {
+  predicted_revenue: number;
+  lower_bound: number | null;
+  upper_bound: number | null;
+  model_used: string;
+};
+
 export type PipelineInput = {
   company_id: string;
   revenue_month: string;             // 'YYYY-MM-DD'
@@ -52,6 +67,10 @@ export type PipelineInput = {
   properties: PropertySummaryRow[];  // up to 10, sorted by revenue desc
   properties_data: PropertyDetailRow[]; // full list (or truncated) sorted by revenue asc
   channel_mix: ChannelMixRow[]; // portfolio-wide channel share for this month
+  forecastMode?: boolean;            // when true, use predictive system prompt
+  forecast?: ForecastData;           // ML forecast results (present when forecastMode=true)
+  risk_data?: RiskScoreRow[];        // risk scores per property
+  trend_data?: { revenue_month: string; total_revenue: number }[]; // last 12 months
 };
 
 export type PipelineResult = {

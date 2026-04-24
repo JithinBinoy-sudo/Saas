@@ -12,7 +12,9 @@ import type {
 
 type Metric = 'revenue' | 'occupancy' | 'adr';
 
-type Props = DashboardData;
+type Props = DashboardData & {
+  headerRight?: React.ReactNode;
+};
 
 function fmtCurrencyLong(n: number): string {
   return `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
@@ -170,6 +172,8 @@ export function DashboardContent({
   priorSummary,
   trendData,
   properties,
+  headerRight,
+  forecastPoint,
 }: Props) {
   const [activeMetric, setActiveMetric] = useState<Metric>('revenue');
   const [searchQuery, setSearchQuery] = useState('');
@@ -309,6 +313,35 @@ export function DashboardContent({
       ? trendPoints[trendPoints.length - 1]
       : { x: 1000, y: 100 };
 
+  // Compute forecast point coordinates on the SVG (only for revenue metric)
+  const forecastCoords = useMemo(() => {
+    if (!forecastPoint || activeMetric !== 'revenue' || view.values.length < 2) return null;
+
+    const allValues = view.values;
+    const min = Math.min(...allValues) * 0.9;
+    const max = Math.max(...allValues) * 1.1;
+    const range = max - min || 1;
+
+    // X position: one step beyond the last point
+    const stepX = 1000 / (allValues.length - 1);
+    const fcX = lastPoint.x + stepX;
+
+    // Y position: map predicted_revenue to the same scale
+    const fcY = 200 - ((forecastPoint.predicted_revenue - min) / range) * 200;
+
+    // Confidence band Y positions
+    let lowerY: number | null = null;
+    let upperY: number | null = null;
+    if (forecastPoint.lower_bound != null) {
+      lowerY = 200 - ((forecastPoint.lower_bound - min) / range) * 200;
+    }
+    if (forecastPoint.upper_bound != null) {
+      upperY = 200 - ((forecastPoint.upper_bound - min) / range) * 200;
+    }
+
+    return { x: Math.min(fcX, 1050), y: fcY, lowerY, upperY };
+  }, [forecastPoint, activeMetric, view.values, lastPoint.x]);
+
   const searchMatches = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
@@ -370,6 +403,7 @@ export function DashboardContent({
           Portfolio Overview
         </h1>
         <div className="flex items-center gap-4">
+          {headerRight}
           <MonthPicker
             availableMonths={availableMonths}
             selectedMonth={selectedMonth}
@@ -721,6 +755,75 @@ export function DashboardContent({
                     </text>
                   </g>
                 )}
+
+                {/* Forecast overlay */}
+                {forecastCoords && forecastPoint && (
+                  <g>
+                    {/* Confidence band */}
+                    {forecastCoords.lowerY != null && forecastCoords.upperY != null && (
+                      <rect
+                        x={forecastCoords.x - 15}
+                        y={Math.min(forecastCoords.upperY, forecastCoords.lowerY)}
+                        width={30}
+                        height={Math.abs(forecastCoords.lowerY - forecastCoords.upperY)}
+                        rx={4}
+                        fill="#adaaad"
+                        fillOpacity={0.08}
+                      />
+                    )}
+
+                    {/* Dashed connector line */}
+                    <line
+                      x1={lastPoint.x}
+                      y1={lastPoint.y}
+                      x2={forecastCoords.x}
+                      y2={forecastCoords.y}
+                      stroke="#adaaad"
+                      strokeWidth={2}
+                      strokeDasharray="6 4"
+                      strokeLinecap="round"
+                    />
+
+                    {/* Forecast point — hollow dashed circle + inner dot */}
+                    <circle
+                      cx={forecastCoords.x}
+                      cy={forecastCoords.y}
+                      r={8}
+                      fill="none"
+                      stroke="#adaaad"
+                      strokeWidth={2}
+                      strokeDasharray="4 3"
+                    />
+                    <circle
+                      cx={forecastCoords.x}
+                      cy={forecastCoords.y}
+                      r={3}
+                      fill="#adaaad"
+                    />
+
+                    {/* Label chip */}
+                    <rect
+                      x={forecastCoords.x - 45}
+                      y={forecastCoords.y - 40}
+                      width={90}
+                      height={22}
+                      rx={10}
+                      fill="#262528"
+                      stroke="#48474a"
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={forecastCoords.x}
+                      y={forecastCoords.y - 25}
+                      textAnchor="middle"
+                      fill="#adaaad"
+                      fontFamily="Inter"
+                      fontSize={10}
+                    >
+                      Forecast ({forecastPoint.model_used === 'prophet' ? 'Prophet' : 'ARIMA'})
+                    </text>
+                  </g>
+                )}
               </svg>
 
               <div className="absolute bottom-0 left-12 w-full flex justify-between text-xs text-on-surface-variant px-4">
@@ -733,6 +836,16 @@ export function DashboardContent({
                   </span>
                 ))}
               </div>
+
+              {/* Forecast legend */}
+              {forecastPoint && activeMetric === 'revenue' && (
+                <div className="absolute bottom-0 right-4 flex items-center gap-2 text-xs text-on-surface-variant">
+                  <svg width="20" height="2" className="inline-block">
+                    <line x1="0" y1="1" x2="20" y2="1" stroke="#adaaad" strokeWidth="2" strokeDasharray="4 3" />
+                  </svg>
+                  <span>Forecast</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

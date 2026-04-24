@@ -1,0 +1,164 @@
+"""
+Portlio Forecast Service — FastAPI app
+Accepts historical monthly revenue data, fits Prophet or ARIMA,
+and writes forecast results back to Supabase.
+"""
+
+import os
+import logging
+from datetime import datetime
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from supabase import create_client, Client
+
+from models.prophet_model import run_prophet_forecast
+from models.arima_model import run_arima_forecast
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="Portlio Forecast Service", version="1.0.0")
+
+# CORS — allow calls from your Next.js app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+
+def get_supabase() -> Client:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase env vars not set")
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+
+class DataPoint(BaseModel):
+    ds: str  # 'YYYY-MM-DD'
+    y: float
+    listing_id: str
+
+
+class ForecastRequest(BaseModel):
+    company_id: str
+    data: list[DataPoint]
+
+
+class ForecastResult(BaseModel):
+    listing_id: str
+    forecast_month: str
+    predicted_revenue: float
+    lower_bound: Optional[float] = None
+    upper_bound: Optional[float] = None
+    model_used: str
+
+
+class ForecastResponse(BaseModel):
+    forecasts: list[ForecastResult]
+    warnings: list[str] = []
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.post("/forecast", response_model=ForecastResponse)
+async def forecast(req: ForecastRequest):
+    """
+    Accepts historical monthly revenue data per listing,
+    fits Prophet or ARIMA based on data length,
+    writes results to Supabase, and returns them.
+    """
+    if not req.data:
+        raise HTTPException(status_code=400, detail="No data provided")
+
+    # Group data by listing_id
+    listings: dict[str, list[dict]] = {}
+    for dp in req.data:
+        listings.setdefault(dp.listing_id, []).append({"ds": dp.ds, "y": dp.y})
+
+    all_forecasts: list[ForecastResult] = []
+    warnings: list[str] = []
+
+    for listing_id, points in listings.items():
+        # Sort by date
+        points.sort(key=lambda x: x["ds"])
+        n_months = len(points)
+
+        if n_months < 3:
+            warnings.append(
+                f"{listing_id}: Only {n_months} months of data — skipping forecast"
+            )
+            continue
+
+        # Model selection based on data availability
+        if n_months >= 24:
+            model_name = "arima"
+            logger.info(f"{listing_id}: Using ARIMA ({n_months} months)")
+            result = run_arima_forecast(points)
+        elif n_months >= 6:
+            model_name = "prophet"
+            logger.info(f"{listing_id}: Using Prophet ({n_months} months)")
+            result = run_prophet_forecast(points)
+        else:
+            model_name = "prophet"
+            logger.info(
+                f"{listing_id}: Using Prophet (degraded, {n_months} months)"
+            )
+            result = run_prophet_forecast(points, degraded=True)
+            warnings.append(
+                f"{listing_id}: Only {n_months} months — forecast has wider confidence bands"
+            )
+
+        if result:
+            forecast_item = ForecastResult(
+                listing_id=listing_id,
+                forecast_month=result["forecast_month"],
+                predicted_revenue=round(result["predicted_revenue"], 2),
+                lower_bound=(
+                    round(result["lower_bound"], 2)
+                    if result.get("lower_bound") is not None
+                    else None
+                ),
+                upper_bound=(
+                    round(result["upper_bound"], 2)
+                    if result.get("upper_bound") is not None
+                    else None
+                ),
+                model_used=model_name,
+            )
+            all_forecasts.append(forecast_item)
+
+    # Write to Supabase
+    if all_forecasts:
+        try:
+            supabase = get_supabase()
+            rows = [
+                {
+                    "company_id": req.company_id,
+                    "listing_id": f.listing_id,
+                    "forecast_month": f.forecast_month,
+                    "predicted_revenue": f.predicted_revenue,
+                    "lower_bound": f.lower_bound,
+                    "upper_bound": f.upper_bound,
+                    "model_used": f.model_used,
+                    "generated_at": datetime.utcnow().isoformat(),
+                }
+                for f in all_forecasts
+            ]
+            supabase.table("revenue_forecasts").upsert(rows).execute()
+            logger.info(f"Wrote {len(rows)} forecast rows to Supabase")
+        except Exception as e:
+            logger.error(f"Failed to write forecasts to Supabase: {e}")
+            warnings.append(f"DB write failed: {str(e)}")
+
+    return ForecastResponse(forecasts=all_forecasts, warnings=warnings)

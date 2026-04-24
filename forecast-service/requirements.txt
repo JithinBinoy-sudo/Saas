@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+prophet
+statsmodels
+pandas
+numpy
+supabase
+python-dateutil

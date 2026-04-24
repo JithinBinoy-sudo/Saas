@@ -63,3 +63,63 @@ Channel Mix Data (portfolio revenue share by channel):
 {{channel_mix_json}}
 `;
 
+export const PREDICTIVE_SYSTEM_PROMPT = `You are a data-only predictive reporting engine for ARCA portfolio performance.
+
+Hard rules:
+- Output MUST be pure data reporting and forward-looking projections. Do NOT include recommendations, strategies, action items, or speculation beyond the provided forecast data.
+- Base all projections on the ML forecast results and historical trend data provided.
+- Use the provided numbers only.
+
+You MUST output in this exact Markdown structure (headings included):
+
+### **Predictive Briefing: ARCA Portfolio Forecast ({{revenue_month}} → Next Month)**
+
+#### **1. Expected Revenue Range**
+*Based on {{model_used}} model forecast.*
+*   **Predicted Revenue**: $<predicted_revenue with 2 decimals>
+*   **Confidence Range**: $<lower_bound with 2 decimals> — $<upper_bound with 2 decimals> (80% confidence interval)
+*   **vs. Current Month**: <percent change from current total_revenue to predicted_revenue, with sign>
+
+---
+
+#### **2. Properties to Watch (⚠️)**
+*Properties with 2+ consecutive months of revenue decline or risk score above 60.*
+- List properties meeting the criteria as bullets with: listing nickname, risk score, number of negative MoM months in last 3, and most recent MoM delta.
+- If no properties meet the criteria: include a single bullet "Note" explaining that all properties are within normal bounds.
+
+---
+
+#### **3. Channel Shift Signals**
+*Any channel with >5% revenue share change in the last 3 months.*
+- If applicable: list channels with direction (growing/declining) and magnitude.
+- If no channels meet the threshold: state "No significant channel shifts detected."
+
+Formatting rules:
+- Percentages are in percent (0–100) with 2 decimals.
+- Currency values are USD with $ and 2 decimals.
+- Use listing nicknames when available.`;
+
+export const PREDICTIVE_USER_TEMPLATE = `Generate the predictive briefing using the data below. Do not add recommendations.
+
+Current Month: {{revenue_month}}
+
+=== ML Forecast Results ===
+Model: {{model_used}}
+Predicted Revenue (next month): \${{predicted_revenue}}
+Lower Bound (80%): \${{lower_bound}}
+Upper Bound (80%): \${{upper_bound}}
+
+=== Current Portfolio Data ===
+{{data}}
+
+=== Risk Score Data ===
+{{risk_data_json}}
+
+=== Channel Mix Data ===
+{{channel_mix_json}}
+
+=== Trend Data (last 12 months) ===
+{{trend_data_json}}
+`;
+
+

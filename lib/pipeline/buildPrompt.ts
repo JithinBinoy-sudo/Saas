@@ -1,5 +1,10 @@
 import type { PipelineInput } from './types';
-import { DEFAULT_SYSTEM_PROMPT, DEFAULT_USER_TEMPLATE } from './defaultPrompts';
+import {
+  DEFAULT_SYSTEM_PROMPT,
+  DEFAULT_USER_TEMPLATE,
+  PREDICTIVE_SYSTEM_PROMPT,
+  PREDICTIVE_USER_TEMPLATE,
+} from './defaultPrompts';
 
 function formatData(input: PipelineInput): string {
   const lines: string[] = [];
@@ -47,12 +52,23 @@ export function buildPrompt(
   systemPrompt?: string,
   userTemplate?: string,
 ): { system: string; user: string } {
-  const system = systemPrompt || DEFAULT_SYSTEM_PROMPT;
-  const template = userTemplate || DEFAULT_USER_TEMPLATE;
+  // Select prompts based on forecastMode
+  const isPredictive = input.forecastMode === true;
+
+  const system = isPredictive
+    ? PREDICTIVE_SYSTEM_PROMPT
+    : (systemPrompt || DEFAULT_SYSTEM_PROMPT);
+
+  const template = isPredictive
+    ? PREDICTIVE_USER_TEMPLATE
+    : (userTemplate || DEFAULT_USER_TEMPLATE);
+
   const data = formatData(input);
 
   const propertiesDataJson = JSON.stringify(input.properties_data);
   const channelMixJson = JSON.stringify(input.channel_mix);
+  const riskDataJson = JSON.stringify(input.risk_data ?? []);
+  const trendDataJson = JSON.stringify(input.trend_data ?? []);
 
   const replacements: Record<string, string> = {
     '{{revenue_month}}': input.revenue_month,
@@ -68,7 +84,17 @@ export function buildPrompt(
     '{{ JSON.stringify($json.channel_mix) }}': channelMixJson,
     '{{properties_data_json}}': propertiesDataJson,
     '{{channel_mix_json}}': channelMixJson,
+    '{{risk_data_json}}': riskDataJson,
+    '{{trend_data_json}}': trendDataJson,
   };
+
+  // Forecast-specific replacements
+  if (isPredictive && input.forecast) {
+    replacements['{{model_used}}'] = input.forecast.model_used;
+    replacements['{{predicted_revenue}}'] = input.forecast.predicted_revenue.toFixed(2);
+    replacements['{{lower_bound}}'] = input.forecast.lower_bound?.toFixed(2) ?? 'N/A';
+    replacements['{{upper_bound}}'] = input.forecast.upper_bound?.toFixed(2) ?? 'N/A';
+  }
 
   let user = template;
   for (const [k, v] of Object.entries(replacements)) {

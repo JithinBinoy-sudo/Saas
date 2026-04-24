@@ -18,6 +18,7 @@ export type PropertyMonthRow = {
   adr_delta: number | null;
   portfolio_median_revenue: number | null;
   portfolio_median_adr: number | null;
+  risk_score: number | null;
 };
 
 export type ChannelMixRow = {
@@ -25,6 +26,14 @@ export type ChannelMixRow = {
   total_nights: number;
   total_revenue: number;
   revenue_share: number;
+};
+
+export type ForecastPoint = {
+  month: string;
+  predicted_revenue: number;
+  lower_bound: number | null;
+  upper_bound: number | null;
+  model_used: 'prophet' | 'arima';
 };
 
 export type DashboardData = {
@@ -35,4 +44,5 @@ export type DashboardData = {
   trendData: MonthlyPortfolioSummary[]; // last 12 months for chart
   properties: PropertyMonthRow[];
   channelMix: ChannelMixRow[];
+  forecastPoint: ForecastPoint | null;
 };

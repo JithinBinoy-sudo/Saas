@@ -12,7 +12,9 @@ import type {
 
 type Metric = 'revenue' | 'occupancy' | 'adr';
 
-type Props = DashboardData;
+type Props = DashboardData & {
+  headerRight?: React.ReactNode;
+};
 
 function fmtCurrencyLong(n: number): string {
   return `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
@@ -170,6 +172,7 @@ export function DashboardContent({
   priorSummary,
   trendData,
   properties,
+  headerRight,
 }: Props) {
   const [activeMetric, setActiveMetric] = useState<Metric>('revenue');
   const [searchQuery, setSearchQuery] = useState('');
@@ -370,6 +373,7 @@ export function DashboardContent({
           Portfolio Overview
         </h1>
         <div className="flex items-center gap-4">
+          {headerRight}
           <MonthPicker
             availableMonths={availableMonths}
             selectedMonth={selectedMonth}

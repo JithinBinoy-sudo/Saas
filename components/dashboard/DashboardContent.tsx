@@ -256,7 +256,27 @@ export function DashboardContent({
           startPolling();
         } else if (res.status === 409) {
           setForecastUi({ state: 'generating', message: 'Retrying forecast…' });
-          startPolling();
+          // Lock was stale/failed and got deleted — retry after a short delay
+          setTimeout(async () => {
+            try {
+              const retry = await fetch('/api/forecast/run', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ as_of_month: selectedMonth }),
+                signal: controller.signal,
+              });
+              if (retry.ok || retry.status === 202) {
+                startPolling();
+              } else {
+                setForecastUi({
+                  state: 'error',
+                  message: `Forecast retry failed (HTTP ${retry.status})`,
+                });
+              }
+            } catch {
+              startPolling();
+            }
+          }, 1000);
         } else if (res.status === 400) {
           const body = await res.json().catch(() => ({}));
           setForecastUi({

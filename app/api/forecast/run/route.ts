@@ -175,14 +175,43 @@ export async function POST(req: Request) {
       }
 
       if (runRow?.status === 'complete') {
+        // Verify actual forecast data exists for this as_of_month
+        const { data: verify } = await admin
+          .from('revenue_forecasts')
+          .select('predicted_revenue')
+          .eq('company_id', userRow.company_id)
+          .eq('listing_id', PORTFOLIO_LISTING_ID)
+          .eq('as_of_month', asOfMonth)
+          .limit(1);
+
+        if (verify && verify.length > 0) {
+          return NextResponse.json(
+            { status: 'cached', as_of_month: asOfMonth, months_used: forecastData.length },
+            { status: 200 }
+          );
+        }
+
+        // Lock says 'complete' but no data — stale lock from before fix; delete it
+        await admin
+          .from('forecast_runs')
+          .delete()
+          .eq('company_id', userRow.company_id)
+          .eq('as_of_month', asOfMonth);
+
         return NextResponse.json(
-          { status: 'cached', as_of_month: asOfMonth, months_used: forecastData.length },
-          { status: 200 }
+          { status: 'retry', as_of_month: asOfMonth, error: 'Stale lock without data — retry' },
+          { status: 409 }
         );
       }
 
       if (runRow?.status === 'failed' || isStale) {
-        // Let client retry immediately (next request will acquire lock)
+        // Delete failed lock so next request can acquire it
+        await admin
+          .from('forecast_runs')
+          .delete()
+          .eq('company_id', userRow.company_id)
+          .eq('as_of_month', asOfMonth);
+
         return NextResponse.json(
           { status: 'retry', as_of_month: asOfMonth, error: runRow?.error ?? null },
           { status: 409 }

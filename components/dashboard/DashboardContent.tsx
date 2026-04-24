@@ -192,6 +192,7 @@ export function DashboardContent({
     | { state: 'generating'; message: string }
     | { state: 'error'; message: string }
   >({ state: 'idle' });
+  const pollRef = useRef<number | null>(null);
   const [hover, setHover] = useState<{
     x: number;
     y: number;
@@ -220,6 +221,23 @@ export function DashboardContent({
     const controller = new AbortController();
     setForecastUi({ state: 'generating', message: 'Generating forecast…' });
 
+    const startPolling = () => {
+      if (pollRef.current != null) window.clearInterval(pollRef.current);
+      let tries = 0;
+      pollRef.current = window.setInterval(() => {
+        tries += 1;
+        router.refresh();
+        if (tries >= 20) {
+          if (pollRef.current != null) window.clearInterval(pollRef.current);
+          pollRef.current = null;
+          setForecastUi({
+            state: 'error',
+            message: 'Forecast is taking too long. Please try again in a minute.',
+          });
+        }
+      }, 2000);
+    };
+
     (async () => {
       try {
         const res = await fetch('/api/forecast/run', {
@@ -231,9 +249,14 @@ export function DashboardContent({
 
         if (res.status === 202) {
           setForecastUi({ state: 'generating', message: 'Forecast is running…' });
+          startPolling();
         } else if (res.status === 200) {
           // cached or complete; we'll refresh below
           setForecastUi({ state: 'generating', message: 'Loading forecast…' });
+          startPolling();
+        } else if (res.status === 409) {
+          setForecastUi({ state: 'generating', message: 'Retrying forecast…' });
+          startPolling();
         } else if (res.status === 400) {
           const body = await res.json().catch(() => ({}));
           setForecastUi({
@@ -269,6 +292,8 @@ export function DashboardContent({
   useEffect(() => {
     if (!selectedMonth) return;
     if (forecastSeries && forecastSeries.length > 0) {
+      if (pollRef.current != null) window.clearInterval(pollRef.current);
+      pollRef.current = null;
       setForecastUi({ state: 'idle' });
     }
   }, [selectedMonth, forecastSeries]);

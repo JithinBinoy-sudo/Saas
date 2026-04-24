@@ -115,10 +115,73 @@ export async function POST(req: Request) {
   });
 
   if (lockErr) {
-    // Someone else likely started it already
+    // If the lock table isn't deployed/migrated, surface a real error (don't loop forever).
+    const msg =
+      lockErr && typeof lockErr === 'object' && 'message' in lockErr
+        ? String((lockErr as { message?: unknown }).message ?? '')
+        : '';
+    const code =
+      lockErr && typeof lockErr === 'object' && 'code' in lockErr
+        ? String((lockErr as { code?: unknown }).code ?? '')
+        : '';
+
+    // Unique violation (another run exists) -> inspect status + staleness.
+    if (code === '23505' || msg.toLowerCase().includes('duplicate key')) {
+      const { data: runRow } = await admin
+        .from('forecast_runs')
+        .select('status, started_at, completed_at, error')
+        .eq('company_id', userRow.company_id)
+        .eq('as_of_month', asOfMonth)
+        .maybeSingle();
+
+      // If it's been "running" for too long, mark failed so we can retry.
+      const startedAt = runRow?.started_at ? new Date(runRow.started_at).getTime() : null;
+      const isStale =
+        runRow?.status === 'running' &&
+        startedAt != null &&
+        Date.now() - startedAt > 5 * 60 * 1000;
+
+      if (isStale) {
+        await admin
+          .from('forecast_runs')
+          .update({
+            status: 'failed',
+            completed_at: new Date().toISOString(),
+            error: 'Stale running lock (auto-failed for retry)',
+          })
+          .eq('company_id', userRow.company_id)
+          .eq('as_of_month', asOfMonth);
+      }
+
+      if (runRow?.status === 'complete') {
+        return NextResponse.json(
+          { status: 'cached', as_of_month: asOfMonth, months_used: forecastData.length },
+          { status: 200 }
+        );
+      }
+
+      if (runRow?.status === 'failed' || isStale) {
+        // Let client retry immediately (next request will acquire lock)
+        return NextResponse.json(
+          { status: 'retry', as_of_month: asOfMonth, error: runRow?.error ?? null },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json(
+        { status: 'running', as_of_month: asOfMonth },
+        { status: 202 }
+      );
+    }
+
+    // Otherwise, it's a real error (e.g. missing table/migration)
     return NextResponse.json(
-      { status: 'running', as_of_month: asOfMonth },
-      { status: 202 }
+      {
+        error: 'Forecast dedupe table not available. Deploy Supabase migrations.',
+        detail: msg || code,
+        as_of_month: asOfMonth,
+      },
+      { status: 500 }
     );
   }
 
@@ -135,8 +198,20 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
+      const errMsg = body.detail ?? `Forecast service error (${response.status})`;
+
+      await admin
+        .from('forecast_runs')
+        .update({
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          error: String(errMsg),
+        })
+        .eq('company_id', userRow.company_id)
+        .eq('as_of_month', asOfMonth);
+
       return NextResponse.json(
-        { error: body.detail ?? `Forecast service error (${response.status})` },
+        { error: errMsg },
         { status: response.status }
       );
     }

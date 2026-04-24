@@ -45,21 +45,22 @@ export async function POST() {
     );
   }
 
-  // 4. Limit training window to most recent 6 months per listing
-  const byListing = new Map<string, { ds: string; y: number; listing_id: string }[]>();
+  // 4. Portfolio-level forecast: aggregate revenue by month, keep last 6 months
+  const PORTFOLIO_LISTING_ID = '__PORTFOLIO__';
+
+  const byMonth = new Map<string, number>();
   for (const row of metricsData as Array<Record<string, unknown>>) {
-    const listing_id = String(row.listing_id ?? '');
-    if (!listing_id) continue;
     const ds = String(row.revenue_month ?? '');
+    if (!ds) continue;
     const y = Number(row.revenue ?? 0);
-    const arr = byListing.get(listing_id) ?? [];
-    arr.push({ ds, y, listing_id });
-    byListing.set(listing_id, arr);
+    byMonth.set(ds, (byMonth.get(ds) ?? 0) + y);
   }
 
-  const forecastData = Array.from(byListing.values()).flatMap((rows) =>
-    rows.slice(-6)
-  );
+  const portfolioSeries = Array.from(byMonth.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([ds, y]) => ({ ds, y, listing_id: PORTFOLIO_LISTING_ID }));
+
+  const forecastData = portfolioSeries.slice(-6);
 
   // 5. Fire-and-forget POST to Railway service
   try {

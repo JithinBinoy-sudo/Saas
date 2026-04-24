@@ -120,23 +120,25 @@ async def forecast(req: ForecastRequest):
             )
 
         if result:
-            forecast_item = ForecastResult(
-                listing_id=listing_id,
-                forecast_month=result["forecast_month"],
-                predicted_revenue=round(result["predicted_revenue"], 2),
-                lower_bound=(
-                    round(result["lower_bound"], 2)
-                    if result.get("lower_bound") is not None
-                    else None
-                ),
-                upper_bound=(
-                    round(result["upper_bound"], 2)
-                    if result.get("upper_bound") is not None
-                    else None
-                ),
-                model_used=model_name,
-            )
-            all_forecasts.append(forecast_item)
+            results = result if isinstance(result, list) else [result]
+            for item in results:
+                forecast_item = ForecastResult(
+                    listing_id=listing_id,
+                    forecast_month=item["forecast_month"],
+                    predicted_revenue=round(item["predicted_revenue"], 2),
+                    lower_bound=(
+                        round(item["lower_bound"], 2)
+                        if item.get("lower_bound") is not None
+                        else None
+                    ),
+                    upper_bound=(
+                        round(item["upper_bound"], 2)
+                        if item.get("upper_bound") is not None
+                        else None
+                    ),
+                    model_used=model_name,
+                )
+                all_forecasts.append(forecast_item)
 
     # Write to Supabase
     if all_forecasts:

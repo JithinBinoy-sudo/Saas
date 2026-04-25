@@ -103,7 +103,7 @@ def forecast_property_count(hist: pd.DataFrame, horizons: int) -> dict[pd.Timest
     """
     Forecast property_count for future months.
 
-    Strategy: HOLD (naive) forecast: next month = last known.
+    Strategy: conservative naive forecast: next month = max(1, last - 1).
     """
     if hist.empty or horizons <= 0:
         return {}
@@ -113,7 +113,7 @@ def forecast_property_count(hist: pd.DataFrame, horizons: int) -> dict[pd.Timest
     as_of = pd.to_datetime(tail.iloc[-1]["revenue_month"]).to_period("M").to_timestamp()
     out: dict[pd.Timestamp, int] = {}
     for h in range(1, horizons + 1):
-        out[(as_of + pd.DateOffset(months=h)).to_period("M").to_timestamp()] = max(0, last)
+        out[(as_of + pd.DateOffset(months=h)).to_period("M").to_timestamp()] = max(1 if last > 0 else 0, last - h)
     return out
 
 

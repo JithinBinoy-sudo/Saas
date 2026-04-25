@@ -63,13 +63,15 @@ def _forecast_property_counts(
     """
     Forecast property_count for the next `horizons` months.
 
-    Fastest accuracy win for unstable portfolios: HOLD (naive) forecast.
-    Next month property_count is assumed equal to as_of_month property_count.
+    Fast accuracy win for unstable portfolios: conservative naive forecast.
+    By default assume the portfolio continues shrinking slightly:
+      next_month_property_count = max(1, as_of_property_count - 1)
+    This avoids large over-forecasts when property_count is dropping.
     """
     if horizons <= 0:
         return {}
 
-    # Determine last known property_count
+    # Determine last known property_count (as-of)
     last = None
     last_date = None
     if history:
@@ -99,7 +101,8 @@ def _forecast_property_counts(
 
     out: dict[str, int] = {}
     for h in range(1, horizons + 1):
-        pred_i = max(0, int(last))
+        # Conservative step-down. For horizons>1, apply repeatedly.
+        pred_i = max(1 if last > 0 else 0, int(last) - h)
         future_month = datetime(last_date.year, last_date.month, 1)
         # add h months
         m = future_month.month - 1 + h

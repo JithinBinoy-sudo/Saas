@@ -975,6 +975,32 @@ export function DashboardContent({
                 {/* Forecast overlay */}
                 {forecastCoords.length > 0 && (
                   <g>
+                    {/* Interval ribbon (region) */}
+                    {(() => {
+                      const band = forecastCoords.filter(
+                        (c) => c.lowerY != null && c.upperY != null
+                      ) as Array<{
+                        x: number;
+                        lowerY: number;
+                        upperY: number;
+                      }>;
+                      if (band.length < 2) return null;
+                      const upper = band.map((c) => `L ${c.x},${c.upperY}`);
+                      const lower = band
+                        .slice()
+                        .reverse()
+                        .map((c) => `L ${c.x},${c.lowerY}`);
+                      const d = [`M ${band[0].x},${band[0].upperY}`, ...upper, ...lower, 'Z'].join(' ');
+                      return (
+                        <path
+                          d={d}
+                          fill="#adaaad"
+                          fillOpacity={0.10}
+                          stroke="none"
+                        />
+                      );
+                    })()}
+
                     {/* Dashed connector path through forecast points */}
                     <path
                       d={[
@@ -990,19 +1016,6 @@ export function DashboardContent({
 
                     {forecastCoords.map((c, idx) => (
                       <g key={idx}>
-                        {/* Confidence band */}
-                        {c.lowerY != null && c.upperY != null && (
-                          <rect
-                            x={c.x - 15}
-                            y={Math.min(c.upperY, c.lowerY)}
-                            width={30}
-                            height={Math.abs(c.lowerY - c.upperY)}
-                            rx={4}
-                            fill="#adaaad"
-                            fillOpacity={0.08}
-                          />
-                        )}
-
                         {/* Forecast point */}
                         <circle
                           cx={c.x}

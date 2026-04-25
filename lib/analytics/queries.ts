@@ -242,7 +242,7 @@ export async function fetchDashboardData(
         companyId,
         selectedMonth,
         selectedMonth,
-        3,
+        1,
         '__PORTFOLIO__'
       ),
     ]);

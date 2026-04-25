@@ -35,8 +35,8 @@ def run_arima_forecast(points: list[dict]) -> list[dict] | None:
         model = ARIMA(ts, order=(1, 1, 1))
         fitted = model.fit()
 
-        # Forecast 3 steps ahead with confidence intervals
-        steps = 3
+        # Forecast 1 step ahead with confidence intervals
+        steps = 1
         forecast_result = fitted.get_forecast(steps=steps)
         forecast_mean = forecast_result.predicted_mean
         conf_int = forecast_result.conf_int(alpha=0.2)  # 80% confidence

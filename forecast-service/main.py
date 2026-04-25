@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
+import numpy as np
 
 from models.prophet_model import run_prophet_forecast
 from models.arima_model import run_arima_forecast
@@ -51,6 +52,90 @@ class ForecastRequest(BaseModel):
     company_id: str
     data: list[DataPoint]
     as_of_month: Optional[str] = None
+    as_of_property_count: Optional[int] = None
+    property_count_history: Optional[list[dict]] = None
+
+
+def _forecast_property_counts(
+    history: list[dict] | None,
+    horizons: int,
+    fallback: int | None,
+) -> dict[str, int]:
+    """
+    Forecast property_count for the next `horizons` months.
+
+    Input history format: [{"ds": "YYYY-MM-DD", "property_count": number}, ...]
+    Strategy: bounded linear trend on last up-to-6 points; fallback to last known.
+    """
+    if not history or horizons <= 0:
+        return {}
+
+    # Parse + sort
+    parsed: list[tuple[datetime, int]] = []
+    for r in history:
+        ds = r.get("ds")
+        pc = r.get("property_count")
+        if not ds:
+            continue
+        try:
+            d = datetime.fromisoformat(str(ds).split("T")[0])
+        except Exception:
+            continue
+        try:
+            n = int(pc) if pc is not None else 0
+        except Exception:
+            n = 0
+        parsed.append((d, max(0, n)))
+
+    parsed.sort(key=lambda t: t[0])
+    if not parsed:
+        return {}
+
+    # Last up-to-6 points for a simple trend
+    tail = parsed[-6:]
+    y = np.array([t[1] for t in tail], dtype=float)
+    last = int(tail[-1][1])
+    last_date = tail[-1][0]
+
+    # Fit line if we have enough variation; else flat
+    if len(tail) >= 2:
+        x = np.arange(len(tail), dtype=float)
+        try:
+            slope, intercept = np.polyfit(x, y, 1)
+        except Exception:
+            slope, intercept = 0.0, float(last)
+    else:
+        slope, intercept = 0.0, float(last)
+
+    out: dict[str, int] = {}
+    for h in range(1, horizons + 1):
+        # Predict on the next step index
+        pred = slope * (len(tail) - 1 + h) + intercept
+        if not np.isfinite(pred):
+            pred = float(last)
+        # We never want to scale revenue to exactly 0 just because the
+        # simple trend extrapolated below zero. Clamp to at least 1 when
+        # the portfolio exists at as_of_month.
+        min_pc = 1 if last > 0 else 0
+        pred_i = int(round(max(float(min_pc), pred)))
+        # Very small series can produce odd oscillations; clamp jumpy predictions a bit.
+        if pred_i > last + 50:
+            pred_i = last + 50
+        future_month = datetime(last_date.year, last_date.month, 1)
+        # add h months
+        m = future_month.month - 1 + h
+        y2 = future_month.year + m // 12
+        m2 = m % 12 + 1
+        future = datetime(y2, m2, 1).strftime("%Y-%m-%d")
+        out[future] = pred_i
+
+    if fallback is not None:
+        fb = max(0, int(fallback))
+        # Ensure any missing keys (shouldn't happen) have fallback
+        for k in list(out.keys()):
+            out[k] = out.get(k, fb)
+
+    return out
 
 
 class ForecastResult(BaseModel):
@@ -124,18 +209,33 @@ async def forecast(req: ForecastRequest):
 
         if result:
             results = result if isinstance(result, list) else [result]
+            propcount_by_month: dict[str, int] = {}
+            if listing_id == "__PORTFOLIO__":
+                propcount_by_month = _forecast_property_counts(
+                    req.property_count_history, horizons=1, fallback=req.as_of_property_count
+                )
+
             for item in results:
+                scale = 1.0
+                if listing_id == "__PORTFOLIO__":
+                    # Use month-specific forecast property_count when available; fallback to as_of_property_count.
+                    pc = propcount_by_month.get(item["forecast_month"])
+                    if pc is None and req.as_of_property_count is not None:
+                        pc = int(req.as_of_property_count)
+                    if pc is not None:
+                        scale = float(max(0, pc))
+
                 forecast_item = ForecastResult(
                     listing_id=listing_id,
                     forecast_month=item["forecast_month"],
-                    predicted_revenue=round(item["predicted_revenue"], 2),
+                    predicted_revenue=round(item["predicted_revenue"] * scale, 2),
                     lower_bound=(
-                        round(item["lower_bound"], 2)
+                        round(item["lower_bound"] * scale, 2)
                         if item.get("lower_bound") is not None
                         else None
                     ),
                     upper_bound=(
-                        round(item["upper_bound"], 2)
+                        round(item["upper_bound"] * scale, 2)
                         if item.get("upper_bound") is not None
                         else None
                     ),

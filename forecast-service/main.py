@@ -63,63 +63,43 @@ def _forecast_property_counts(
     """
     Forecast property_count for the next `horizons` months.
 
-    Input history format: [{"ds": "YYYY-MM-DD", "property_count": number}, ...]
-    Strategy: bounded linear trend on last up-to-6 points; fallback to last known.
+    Fastest accuracy win for unstable portfolios: HOLD (naive) forecast.
+    Next month property_count is assumed equal to as_of_month property_count.
     """
-    if not history or horizons <= 0:
+    if horizons <= 0:
         return {}
 
-    # Parse + sort
-    parsed: list[tuple[datetime, int]] = []
-    for r in history:
-        ds = r.get("ds")
-        pc = r.get("property_count")
-        if not ds:
-            continue
-        try:
-            d = datetime.fromisoformat(str(ds).split("T")[0])
-        except Exception:
-            continue
-        try:
-            n = int(pc) if pc is not None else 0
-        except Exception:
-            n = 0
-        parsed.append((d, max(0, n)))
+    # Determine last known property_count
+    last = None
+    last_date = None
+    if history:
+        parsed: list[tuple[datetime, int]] = []
+        for r in history:
+            ds = r.get("ds")
+            pc = r.get("property_count")
+            if not ds:
+                continue
+            try:
+                d = datetime.fromisoformat(str(ds).split("T")[0])
+            except Exception:
+                continue
+            try:
+                n = int(pc) if pc is not None else 0
+            except Exception:
+                n = 0
+            parsed.append((d, max(0, n)))
+        parsed.sort(key=lambda t: t[0])
+        if parsed:
+            last_date, last = parsed[-1][0], int(parsed[-1][1])
 
-    parsed.sort(key=lambda t: t[0])
-    if not parsed:
-        return {}
-
-    # Last up-to-6 points for a simple trend
-    tail = parsed[-6:]
-    y = np.array([t[1] for t in tail], dtype=float)
-    last = int(tail[-1][1])
-    last_date = tail[-1][0]
-
-    # Fit line if we have enough variation; else flat
-    if len(tail) >= 2:
-        x = np.arange(len(tail), dtype=float)
-        try:
-            slope, intercept = np.polyfit(x, y, 1)
-        except Exception:
-            slope, intercept = 0.0, float(last)
-    else:
-        slope, intercept = 0.0, float(last)
+    if last is None:
+        last = max(0, int(fallback or 0))
+    if last_date is None:
+        last_date = datetime.utcnow()
 
     out: dict[str, int] = {}
     for h in range(1, horizons + 1):
-        # Predict on the next step index
-        pred = slope * (len(tail) - 1 + h) + intercept
-        if not np.isfinite(pred):
-            pred = float(last)
-        # We never want to scale revenue to exactly 0 just because the
-        # simple trend extrapolated below zero. Clamp to at least 1 when
-        # the portfolio exists at as_of_month.
-        min_pc = 1 if last > 0 else 0
-        pred_i = int(round(max(float(min_pc), pred)))
-        # Very small series can produce odd oscillations; clamp jumpy predictions a bit.
-        if pred_i > last + 50:
-            pred_i = last + 50
+        pred_i = max(0, int(last))
         future_month = datetime(last_date.year, last_date.month, 1)
         # add h months
         m = future_month.month - 1 + h

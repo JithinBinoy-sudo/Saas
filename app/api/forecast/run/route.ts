@@ -52,7 +52,8 @@ export async function POST(req: Request) {
   // 4. Portfolio-level forecast: aggregate revenue by month and train as-of a target month
   const PORTFOLIO_LISTING_ID = '__PORTFOLIO__';
   const TRAINING_MIN_MONTHS = 6;
-  const TRAINING_WINDOW_MONTHS = 12;
+  // Fastest improvement: use exactly last 6 months to predict the 7th.
+  const TRAINING_WINDOW_MONTHS = 6;
 
   let body: Body | null = null;
   try {

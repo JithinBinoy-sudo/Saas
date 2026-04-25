@@ -198,6 +198,8 @@ export function DashboardContent({
     y: number;
     label: string;
     valueLabel: string;
+    lowerLabel?: string;
+    upperLabel?: string;
     isForecast: boolean;
   } | null>(null);
 
@@ -594,6 +596,14 @@ export function DashboardContent({
         timeZone: 'UTC',
       }),
       valueLabel: fmtCurrencyLong(c.point.predicted_revenue),
+      lowerLabel:
+        c.point.lower_bound != null
+          ? fmtCurrencyLong(Number(c.point.lower_bound))
+          : undefined,
+      upperLabel:
+        c.point.upper_bound != null
+          ? fmtCurrencyLong(Number(c.point.upper_bound))
+          : undefined,
       isForecast: true,
     }));
     return [...base, ...fc];
@@ -628,6 +638,8 @@ export function DashboardContent({
       y: best.y,
       label: best.label,
       valueLabel: best.valueLabel,
+      lowerLabel: 'lowerLabel' in best ? (best as { lowerLabel?: string }).lowerLabel : undefined,
+      upperLabel: 'upperLabel' in best ? (best as { upperLabel?: string }).upperLabel : undefined,
       isForecast: best.isForecast,
     });
   }
@@ -1195,15 +1207,28 @@ export function DashboardContent({
                   }}
                 >
                   <div className="text-zinc-300">{hover.label}</div>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <span className={hover.isForecast ? 'text-zinc-400' : 'text-zinc-100'}>
-                      {hover.valueLabel}
-                    </span>
-                    {hover.isForecast && (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
-                        Forecast
+                  <div className="mt-1 space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-zinc-400">Forecast</span>
+                      <span className={hover.isForecast ? 'text-zinc-100' : 'text-zinc-100'}>
+                        {hover.valueLabel}
                       </span>
-                    )}
+                    </div>
+
+                    {hover.isForecast &&
+                      hover.lowerLabel != null &&
+                      hover.upperLabel != null && (
+                        <>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-zinc-500">Lower</span>
+                            <span className="text-zinc-200">{hover.lowerLabel}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-zinc-500">Upper</span>
+                            <span className="text-zinc-200">{hover.upperLabel}</span>
+                          </div>
+                        </>
+                      )}
                   </div>
                 </div>
               )}

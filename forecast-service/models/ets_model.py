@@ -48,9 +48,12 @@ def run_ets_forecast(points: list[dict]) -> list[dict] | None:
         ts.index = pd.DatetimeIndex(ts.index)
         ts.index = ts.index.to_period("M").to_timestamp()
 
+        # Fit ETS in log space to preserve non-negativity without hard clipping to 0.
+        ts_log = np.log1p(ts)
+
         # Non-seasonal ETS with (optionally damped) trend is a good default for short series.
         model = ExponentialSmoothing(
-            ts,
+            ts_log,
             trend="add",
             damped_trend=True,
             seasonal=None,
@@ -60,22 +63,26 @@ def run_ets_forecast(points: list[dict]) -> list[dict] | None:
 
         # One-step forecast
         fc = fit.forecast(1)
-        pred = float(fc.iloc[0])
+        pred_log = float(fc.iloc[0])
 
         # Residual-based interval: use in-sample one-step errors as dispersion estimate.
         fitted = fit.fittedvalues
-        errs = (ts - fitted).dropna()
+        errs = (ts_log - fitted).dropna()
         sigma = float(errs.std(ddof=1)) if len(errs) >= 3 else float(errs.std(ddof=0)) if len(errs) >= 2 else 0.0
         if not math.isfinite(sigma):
             sigma = 0.0
 
-        lower = pred - Z_80 * sigma
-        upper = pred + Z_80 * sigma
+        lower_log = pred_log - Z_80 * sigma
+        upper_log = pred_log + Z_80 * sigma
 
-        # Clamp to non-negative
-        pred = max(0.0, pred)
-        lower = max(0.0, lower)
-        upper = max(0.0, upper)
+        # Clamp in log space, then invert transform.
+        pred_log = max(0.0, pred_log)
+        lower_log = max(0.0, lower_log)
+        upper_log = max(0.0, upper_log)
+
+        pred = float(np.expm1(pred_log))
+        lower = float(np.expm1(lower_log))
+        upper = float(np.expm1(upper_log))
 
         last_date = pd.to_datetime(df["ds"].max())
         next_month = (last_date + relativedelta(months=1))

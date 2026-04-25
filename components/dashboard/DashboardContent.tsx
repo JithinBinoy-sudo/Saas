@@ -984,18 +984,29 @@ export function DashboardContent({
                         lowerY: number;
                         upperY: number;
                       }>;
-                      if (band.length < 2) return null;
-                      const upper = band.map((c) => `L ${c.x},${c.upperY}`);
-                      const lower = band
+                      if (band.length === 0) return null;
+
+                      // With a 1-month horizon we only have 1 point; draw a visible band
+                      // spanning from the last actual point to the forecast point.
+                      const bandPoints =
+                        band.length === 1
+                          ? [
+                              { x: lastPoint.x, upperY: band[0].upperY, lowerY: band[0].lowerY },
+                              { x: band[0].x, upperY: band[0].upperY, lowerY: band[0].lowerY },
+                            ]
+                          : band;
+
+                      const upper = bandPoints.map((c) => `L ${c.x},${c.upperY}`);
+                      const lower = bandPoints
                         .slice()
                         .reverse()
                         .map((c) => `L ${c.x},${c.lowerY}`);
-                      const d = [`M ${band[0].x},${band[0].upperY}`, ...upper, ...lower, 'Z'].join(' ');
+                      const d = [`M ${bandPoints[0].x},${bandPoints[0].upperY}`, ...upper, ...lower, 'Z'].join(' ');
                       return (
                         <path
                           d={d}
                           fill="#adaaad"
-                          fillOpacity={0.10}
+                          fillOpacity={0.12}
                           stroke="none"
                         />
                       );

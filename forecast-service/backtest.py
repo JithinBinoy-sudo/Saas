@@ -7,7 +7,7 @@ Purpose:
 
 Notes:
 - Uses the same ETS model code as production (run_ets_forecast).
-- Uses a rolling 12-month window and per-property normalization (same as API).
+- Uses a rolling 6-month window (same as API).
 - Requires env vars:
   - SUPABASE_URL
   - SUPABASE_SERVICE_ROLE_KEY
@@ -27,12 +27,10 @@ from supabase import create_client
 from models.ets_model import run_ets_forecast
 
 
-PORTFOLIO_LISTING_ID = "__PORTFOLIO__"
 TRAINING_MIN_MONTHS = 6
 # Fastest improvement: use exactly last 6 months to predict the 7th.
 ROLLING_WINDOW_MONTHS = 6
 HORIZON_MONTHS = 1
-PROPERTY_TREND_POINTS = 6
 
 
 @dataclass(frozen=True)
@@ -99,24 +97,6 @@ def fetch_monthly_totals(company_id: str) -> pd.DataFrame:
     return g
 
 
-def forecast_property_count(hist: pd.DataFrame, horizons: int) -> dict[pd.Timestamp, int]:
-    """
-    Forecast property_count for future months.
-
-    Strategy: conservative naive forecast: next month = max(1, last - 1).
-    """
-    if hist.empty or horizons <= 0:
-        return {}
-
-    tail = hist.tail(1)
-    last = int(tail.iloc[-1]["property_count"])
-    as_of = pd.to_datetime(tail.iloc[-1]["revenue_month"]).to_period("M").to_timestamp()
-    out: dict[pd.Timestamp, int] = {}
-    for h in range(1, horizons + 1):
-        out[(as_of + pd.DateOffset(months=h)).to_period("M").to_timestamp()] = max(1 if last > 0 else 0, last - h)
-    return out
-
-
 def iter_anchors(months: Iterable[pd.Timestamp]) -> list[pd.Timestamp]:
     months = sorted(set(months))
     # Need at least TRAINING_MIN_MONTHS months before an anchor is eligible.
@@ -134,17 +114,13 @@ def run_backtest(df: pd.DataFrame) -> list[ScoreRow]:
         if len(hist) < TRAINING_MIN_MONTHS:
             continue
 
-        future_pc = forecast_property_count(hist, HORIZON_MONTHS)
-        points = [
-            {"ds": month_str(r["revenue_month"]), "y": float(r["per_property_revenue"])}
-            for _, r in hist.iterrows()
-        ]
+        points = [{"ds": month_str(r["revenue_month"]), "y": float(r["total_revenue"])} for _, r in hist.iterrows()]
 
         forecasts = run_ets_forecast(points)
         if not forecasts:
             continue
 
-        # Map forecast month -> per-property predicted
+        # Map forecast month -> predicted total revenue
         by_month = {pd.to_datetime(f["forecast_month"]).to_period("M").to_timestamp(): float(f["predicted_revenue"]) for f in forecasts}
 
         for h in range(1, HORIZON_MONTHS + 1):
@@ -154,9 +130,7 @@ def run_backtest(df: pd.DataFrame) -> list[ScoreRow]:
                 continue
             actual_total = float(actual_row.iloc[0]["total_revenue"])
 
-            pred_per_property = float(by_month.get(target_month, 0.0))
-            pc = int(future_pc.get(target_month, int(hist.iloc[-1]["property_count"])))
-            pred_total = pred_per_property * max(0, pc)
+            pred_total = float(by_month.get(target_month, 0.0))
 
             scores.append(
                 ScoreRow(

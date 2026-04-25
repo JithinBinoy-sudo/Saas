@@ -51,73 +51,6 @@ class ForecastRequest(BaseModel):
     company_id: str
     data: list[DataPoint]
     as_of_month: Optional[str] = None
-    as_of_property_count: Optional[int] = None
-    property_count_history: Optional[list[dict]] = None
-
-
-def _forecast_property_counts(
-    history: list[dict] | None,
-    horizons: int,
-    fallback: int | None,
-) -> dict[str, int]:
-    """
-    Forecast property_count for the next `horizons` months.
-
-    Fast accuracy win for unstable portfolios: conservative naive forecast.
-    By default assume the portfolio continues shrinking slightly:
-      next_month_property_count = max(1, as_of_property_count - 1)
-    This avoids large over-forecasts when property_count is dropping.
-    """
-    if horizons <= 0:
-        return {}
-
-    # Determine last known property_count (as-of)
-    last = None
-    last_date = None
-    if history:
-        parsed: list[tuple[datetime, int]] = []
-        for r in history:
-            ds = r.get("ds")
-            pc = r.get("property_count")
-            if not ds:
-                continue
-            try:
-                d = datetime.fromisoformat(str(ds).split("T")[0])
-            except Exception:
-                continue
-            try:
-                n = int(pc) if pc is not None else 0
-            except Exception:
-                n = 0
-            parsed.append((d, max(0, n)))
-        parsed.sort(key=lambda t: t[0])
-        if parsed:
-            last_date, last = parsed[-1][0], int(parsed[-1][1])
-
-    if last is None:
-        last = max(0, int(fallback or 0))
-    if last_date is None:
-        last_date = datetime.utcnow()
-
-    out: dict[str, int] = {}
-    for h in range(1, horizons + 1):
-        # Conservative step-down. For horizons>1, apply repeatedly.
-        pred_i = max(1 if last > 0 else 0, int(last) - h)
-        future_month = datetime(last_date.year, last_date.month, 1)
-        # add h months
-        m = future_month.month - 1 + h
-        y2 = future_month.year + m // 12
-        m2 = m % 12 + 1
-        future = datetime(y2, m2, 1).strftime("%Y-%m-%d")
-        out[future] = pred_i
-
-    if fallback is not None:
-        fb = max(0, int(fallback))
-        # Ensure any missing keys (shouldn't happen) have fallback
-        for k in list(out.keys()):
-            out[k] = out.get(k, fb)
-
-    return out
 
 
 class ForecastResult(BaseModel):
@@ -179,33 +112,18 @@ async def forecast(req: ForecastRequest):
 
         if result:
             results = result if isinstance(result, list) else [result]
-            propcount_by_month: dict[str, int] = {}
-            if listing_id == "__PORTFOLIO__":
-                propcount_by_month = _forecast_property_counts(
-                    req.property_count_history, horizons=1, fallback=req.as_of_property_count
-                )
-
             for item in results:
-                scale = 1.0
-                if listing_id == "__PORTFOLIO__":
-                    # Use month-specific forecast property_count when available; fallback to as_of_property_count.
-                    pc = propcount_by_month.get(item["forecast_month"])
-                    if pc is None and req.as_of_property_count is not None:
-                        pc = int(req.as_of_property_count)
-                    if pc is not None:
-                        scale = float(max(0, pc))
-
                 forecast_item = ForecastResult(
                     listing_id=listing_id,
                     forecast_month=item["forecast_month"],
-                    predicted_revenue=round(item["predicted_revenue"] * scale, 2),
+                    predicted_revenue=round(item["predicted_revenue"], 2),
                     lower_bound=(
-                        round(item["lower_bound"] * scale, 2)
+                        round(item["lower_bound"], 2)
                         if item.get("lower_bound") is not None
                         else None
                     ),
                     upper_bound=(
-                        round(item["upper_bound"] * scale, 2)
+                        round(item["upper_bound"], 2)
                         if item.get("upper_bound") is not None
                         else None
                     ),

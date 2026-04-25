@@ -63,28 +63,16 @@ export async function POST(req: Request) {
   }
 
   const revenueByMonth = new Map<string, number>();
-  const listingIdsByMonth = new Map<string, Set<string>>();
   for (const row of metricsData as Array<Record<string, unknown>>) {
     const ds = String(row.revenue_month ?? '');
     if (!ds) continue;
     const y = Number(row.revenue ?? 0);
     revenueByMonth.set(ds, (revenueByMonth.get(ds) ?? 0) + y);
-
-    const listingId = String(row.listing_id ?? '');
-    if (listingId) {
-      const cur = listingIdsByMonth.get(ds) ?? new Set<string>();
-      cur.add(listingId);
-      listingIdsByMonth.set(ds, cur);
-    }
   }
 
   const portfolioSeries = Array.from(revenueByMonth.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([ds, totalRevenue]) => {
-      const propertyCount = listingIdsByMonth.get(ds)?.size ?? 0;
-      const perPropertyRevenue = propertyCount > 0 ? totalRevenue / propertyCount : 0;
-      return { ds, y: perPropertyRevenue, listing_id: PORTFOLIO_LISTING_ID, property_count: propertyCount };
-    });
+    .map(([ds, totalRevenue]) => ({ ds, y: totalRevenue, listing_id: PORTFOLIO_LISTING_ID }));
 
   const latestMonth = portfolioSeries.length > 0 ? portfolioSeries[portfolioSeries.length - 1].ds : '';
   const asOfMonth = String(body?.as_of_month ?? latestMonth);
@@ -103,12 +91,6 @@ export async function POST(req: Request) {
 
   // Use a rolling window ending at asOfMonth (minimum 6 enforced above)
   const forecastData = eligible.slice(-Math.max(TRAINING_MIN_MONTHS, TRAINING_WINDOW_MONTHS));
-  const asOfPropertyCount =
-    eligible.length > 0 ? (eligible[eligible.length - 1] as { property_count?: number }).property_count ?? 0 : 0;
-  const propertyCountHistory = forecastData.map((p) => ({
-    ds: p.ds,
-    property_count: (p as { property_count?: number }).property_count ?? 0,
-  }));
 
   // 5. Cache + dedupe: if valid forecasts exist, don't recompute
   const { data: existing } = await admin
@@ -264,8 +246,6 @@ export async function POST(req: Request) {
         company_id: userRow.company_id,
         data: forecastData,
         as_of_month: asOfMonth,
-        as_of_property_count: asOfPropertyCount,
-        property_count_history: propertyCountHistory,
       }),
     });
 

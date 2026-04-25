@@ -15,8 +15,7 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 import numpy as np
 
-from models.prophet_model import run_prophet_forecast
-from models.arima_model import run_arima_forecast
+from models.ets_model import run_ets_forecast
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -188,24 +187,12 @@ async def forecast(req: ForecastRequest):
             )
             continue
 
-        # Model selection based on data availability
-        if n_months >= 24:
-            model_name = "arima"
-            logger.info(f"{listing_id}: Using ARIMA ({n_months} months)")
-            result = run_arima_forecast(points)
-        elif n_months >= 6:
-            model_name = "prophet"
-            logger.info(f"{listing_id}: Using Prophet ({n_months} months)")
-            result = run_prophet_forecast(points)
-        else:
-            model_name = "prophet"
-            logger.info(
-                f"{listing_id}: Using Prophet (degraded, {n_months} months)"
-            )
-            result = run_prophet_forecast(points, degraded=True)
-            warnings.append(
-                f"{listing_id}: Only {n_months} months — forecast has wider confidence bands"
-            )
+        # ETS is a strong default for short monthly series and 1-step forecasts.
+        model_name = "ets"
+        logger.info(f"{listing_id}: Using ETS ({n_months} months)")
+        result = run_ets_forecast(points)
+        if not result:
+            warnings.append(f"{listing_id}: ETS fit failed — skipping forecast")
 
         if result:
             results = result if isinstance(result, list) else [result]

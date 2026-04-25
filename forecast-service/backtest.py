@@ -6,7 +6,7 @@ Purpose:
 - Compare predicted next-month (and next 3 months) totals vs actual totals.
 
 Notes:
-- Uses the same Prophet model code as production (run_prophet_forecast).
+- Uses the same ETS model code as production (run_ets_forecast).
 - Uses a rolling 12-month window and per-property normalization (same as API).
 - Requires env vars:
   - SUPABASE_URL
@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from supabase import create_client
 
-from models.prophet_model import run_prophet_forecast
+from models.ets_model import run_ets_forecast
 
 
 PORTFOLIO_LISTING_ID = "__PORTFOLIO__"
@@ -156,7 +156,7 @@ def run_backtest(df: pd.DataFrame) -> list[ScoreRow]:
             for _, r in hist.iterrows()
         ]
 
-        forecasts = run_prophet_forecast(points)
+        forecasts = run_ets_forecast(points)
         if not forecasts:
             continue
 

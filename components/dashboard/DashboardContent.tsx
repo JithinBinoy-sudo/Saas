@@ -431,12 +431,26 @@ export function DashboardContent({
   const MoM =
     view.prior > 0 ? ((view.current - view.prior) / view.prior) * 100 : null;
 
+  // Trend card mode:
+  // Option A: show only selected-month actual + next-month forecast (2 points).
+  const showSelectedMonthOnlyTrend = activeMetric === 'revenue';
+
   const forecastCount =
     activeMetric === 'revenue' ? (forecastSeries?.length ?? 0) : 0;
-  const hasForecast = Boolean(forecastCount > 0 && view.values.length >= 2);
+  const hasForecast = Boolean(
+    forecastCount > 0 &&
+      (showSelectedMonthOnlyTrend ? view.current > 0 : view.values.length >= 2)
+  );
 
-  let rawMin = Math.min(...view.values);
-  let rawMax = Math.max(...view.values);
+  const selectedMonthIso = effectiveSummary?.revenue_month ?? summary?.revenue_month ?? '';
+  const forecastPoint = forecastSeries && forecastSeries.length > 0 ? forecastSeries[0] : null;
+
+  const baseValues = showSelectedMonthOnlyTrend
+    ? [view.current, forecastPoint?.predicted_revenue ?? view.current]
+    : view.values;
+
+  let rawMin = Math.min(...baseValues);
+  let rawMax = Math.max(...baseValues);
   if (hasForecast) {
     for (const p of forecastSeries) {
       rawMax = Math.max(
@@ -451,56 +465,124 @@ export function DashboardContent({
   const chartMax = rawMax * 1.1;
   const chartRange = chartMax - chartMin || 1;
 
-  const { path: trendPath, fillPath: trendFill, points: trendPoints } = useMemo(
-    () =>
-      createSmoothPath(view.values, 1000, 200, chartMin, chartRange, forecastCount),
-    [view.values, chartMin, chartRange, forecastCount]
-  );
-  const lastPoint =
-    trendPoints.length > 0
-      ? trendPoints[trendPoints.length - 1]
-      : { x: 1000, y: 100 };
+  const { trendPath, trendFill, trendPoints, lastPoint, forecastCoords } = useMemo(() => {
+    if (showSelectedMonthOnlyTrend) {
+      const actual = view.current;
+      const pred = forecastPoint?.predicted_revenue ?? 0;
 
-  const forecastCoords = useMemo(() => {
-    if (!hasForecast) return [];
-    const totalPoints = Math.max(2, view.values.length + forecastCount);
-    const denom = Math.max(1, totalPoints - 1);
+      const x0 = 0;
+      const x1 = 1000;
+      const y0 = 200 - ((actual - chartMin) / chartRange) * 200;
+      const y1 = 200 - ((pred - chartMin) / chartRange) * 200;
 
-    return forecastSeries.slice(0, forecastCount).map((p, idx) => {
-      const i = view.values.length - 1 + (idx + 1);
-      const x = (i / denom) * 1000;
-      const y = 200 - ((p.predicted_revenue - chartMin) / chartRange) * 200;
       const lowerY =
-        p.lower_bound != null
-          ? 200 - ((p.lower_bound - chartMin) / chartRange) * 200
+        forecastPoint?.lower_bound != null
+          ? 200 - ((forecastPoint.lower_bound - chartMin) / chartRange) * 200
           : null;
       const upperY =
-        p.upper_bound != null
-          ? 200 - ((p.upper_bound - chartMin) / chartRange) * 200
+        forecastPoint?.upper_bound != null
+          ? 200 - ((forecastPoint.upper_bound - chartMin) / chartRange) * 200
           : null;
-      return { x, y, lowerY, upperY, point: p };
-    });
-  }, [hasForecast, view.values.length, forecastCount, forecastSeries, chartMin, chartRange]);
+
+      return {
+        trendPath: `M ${x0},${y0} L ${x1},${y1}`,
+        trendFill: '',
+        trendPoints: [
+          { x: x0, y: y0 },
+          { x: x1, y: y1 },
+        ],
+        lastPoint: { x: x0, y: y0 },
+        forecastCoords:
+          forecastPoint != null
+            ? [
+                {
+                  x: x1,
+                  y: y1,
+                  lowerY,
+                  upperY,
+                  point: forecastPoint,
+                },
+              ]
+            : [],
+      };
+    }
+
+    const { path, fillPath, points } = createSmoothPath(
+      view.values,
+      1000,
+      200,
+      chartMin,
+      chartRange,
+      forecastCount
+    );
+    const last =
+      points.length > 0 ? points[points.length - 1] : { x: 1000, y: 100 };
+
+    const fc = (() => {
+      if (!(forecastCount > 0 && view.values.length >= 2)) return [];
+      const totalPoints = Math.max(2, view.values.length + forecastCount);
+      const denom = Math.max(1, totalPoints - 1);
+
+      return forecastSeries.slice(0, forecastCount).map((p, idx) => {
+        const i = view.values.length - 1 + (idx + 1);
+        const x = (i / denom) * 1000;
+        const y = 200 - ((p.predicted_revenue - chartMin) / chartRange) * 200;
+        const lowerY =
+          p.lower_bound != null
+            ? 200 - ((p.lower_bound - chartMin) / chartRange) * 200
+            : null;
+        const upperY =
+          p.upper_bound != null
+            ? 200 - ((p.upper_bound - chartMin) / chartRange) * 200
+            : null;
+        return { x, y, lowerY, upperY, point: p };
+      });
+    })();
+
+    return { trendPath: path, trendFill: fillPath, trendPoints: points, lastPoint: last, forecastCoords: fc };
+  }, [
+    showSelectedMonthOnlyTrend,
+    view,
+    chartMin,
+    chartRange,
+    forecastCount,
+    forecastSeries,
+    forecastPoint,
+  ]);
 
   const hoverCandidates = useMemo(() => {
-    const base = chartTrendData.map((d, i) => ({
-      x: trendPoints[i]?.x ?? 0,
-      y: trendPoints[i]?.y ?? 0,
-      label: new Date(d.revenue_month).toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
-        timeZone: 'UTC',
-      }),
-      valueLabel:
-        activeMetric === 'revenue'
-          ? fmtCurrencyLong(d.total_revenue)
-          : activeMetric === 'adr'
-            ? fmtCurrencyLong(d.portfolio_adr)
-            : fmtPercent(
-                occupancyFor(d.total_nights, d.property_count, d.revenue_month)
-              ),
-      isForecast: false,
-    }));
+    const base = showSelectedMonthOnlyTrend
+      ? [
+          {
+            x: trendPoints[0]?.x ?? 0,
+            y: trendPoints[0]?.y ?? 0,
+            label: selectedMonthIso
+              ? new Date(selectedMonthIso).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                  timeZone: 'UTC',
+                })
+              : 'Selected month',
+            valueLabel: fmtCurrencyLong(view.current),
+            isForecast: false,
+          },
+        ]
+      : chartTrendData.map((d, i) => ({
+          x: trendPoints[i]?.x ?? 0,
+          y: trendPoints[i]?.y ?? 0,
+          label: new Date(d.revenue_month).toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'UTC',
+          }),
+          valueLabel:
+            activeMetric === 'adr'
+              ? fmtCurrencyLong(d.portfolio_adr)
+              : fmtPercent(
+                  occupancyFor(d.total_nights, d.property_count, d.revenue_month)
+                ),
+          isForecast: false,
+        }));
 
     if (!hasForecast) return base;
     const fc = forecastCoords.map((c) => ({
@@ -515,7 +597,16 @@ export function DashboardContent({
       isForecast: true,
     }));
     return [...base, ...fc];
-  }, [chartTrendData, trendPoints, forecastCoords, hasForecast, activeMetric]);
+  }, [
+    showSelectedMonthOnlyTrend,
+    selectedMonthIso,
+    view,
+    chartTrendData,
+    trendPoints,
+    forecastCoords,
+    hasForecast,
+    activeMetric,
+  ]);
 
   function onTrendMouseMove(e: React.MouseEvent<SVGSVGElement>) {
     if (!trendSvgRef.current || hoverCandidates.length === 0) return;
@@ -802,7 +893,7 @@ export function DashboardContent({
                   </feMerge>
                 </filter>
               </defs>
-              <path d={trendFill} fill="url(#wave-gradient)" />
+              {trendFill ? <path d={trendFill} fill="url(#wave-gradient)" /> : null}
               <path
                 d={trendPath}
                 fill="none"
@@ -1118,41 +1209,70 @@ export function DashboardContent({
               )}
 
               <div className="absolute bottom-0 left-12 right-0 h-6">
-                {chartTrendData.map((d, i) => {
-                  const totalPoints = Math.max(
-                    2,
-                    chartTrendData.length + (hasForecast ? forecastCount : 0)
-                  );
-                  const denom = Math.max(1, totalPoints - 1);
-                  const pct = (i / denom) * 100;
-                  return (
-                    <span key={i} className="absolute text-xs text-on-surface-variant transform -translate-x-1/2 whitespace-nowrap" style={{ left: `${pct}%` }}>
-                      {new Date(d.revenue_month).toLocaleDateString('en-US', {
-                        month: 'short',
-                        timeZone: 'UTC',
-                      })}
+                {showSelectedMonthOnlyTrend ? (
+                  <>
+                    <span
+                      className="absolute text-xs text-on-surface-variant transform -translate-x-1/2 whitespace-nowrap"
+                      style={{ left: '0%' }}
+                    >
+                      {selectedMonthIso
+                        ? new Date(selectedMonthIso).toLocaleDateString('en-US', {
+                            month: 'short',
+                            timeZone: 'UTC',
+                          })
+                        : ''}
                     </span>
-                  );
-                })}
-                {hasForecast &&
-                  forecastSeries.slice(0, forecastCount).map((p, idx) => {
-                    const totalPoints = Math.max(2, chartTrendData.length + forecastCount);
-                    const denom = Math.max(1, totalPoints - 1);
-                    const i = chartTrendData.length - 1 + (idx + 1);
-                    const pct = (i / denom) * 100;
-                    return (
+                    {hasForecast && forecastPoint && (
                       <span
-                        key={p.month}
                         className="absolute text-xs font-medium text-primary transform -translate-x-1/2 whitespace-nowrap"
-                        style={{ left: `${pct}%` }}
+                        style={{ left: '100%' }}
                       >
-                        {new Date(p.month).toLocaleDateString('en-US', {
+                        {new Date(forecastPoint.month).toLocaleDateString('en-US', {
                           month: 'short',
                           timeZone: 'UTC',
                         })}
                       </span>
-                    );
-                  })}
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {chartTrendData.map((d, i) => {
+                      const totalPoints = Math.max(
+                        2,
+                        chartTrendData.length + (hasForecast ? forecastCount : 0)
+                      );
+                      const denom = Math.max(1, totalPoints - 1);
+                      const pct = (i / denom) * 100;
+                      return (
+                        <span key={i} className="absolute text-xs text-on-surface-variant transform -translate-x-1/2 whitespace-nowrap" style={{ left: `${pct}%` }}>
+                          {new Date(d.revenue_month).toLocaleDateString('en-US', {
+                            month: 'short',
+                            timeZone: 'UTC',
+                          })}
+                        </span>
+                      );
+                    })}
+                    {hasForecast &&
+                      forecastSeries.slice(0, forecastCount).map((p, idx) => {
+                        const totalPoints = Math.max(2, chartTrendData.length + forecastCount);
+                        const denom = Math.max(1, totalPoints - 1);
+                        const i = chartTrendData.length - 1 + (idx + 1);
+                        const pct = (i / denom) * 100;
+                        return (
+                          <span
+                            key={p.month}
+                            className="absolute text-xs font-medium text-primary transform -translate-x-1/2 whitespace-nowrap"
+                            style={{ left: `${pct}%` }}
+                          >
+                            {new Date(p.month).toLocaleDateString('en-US', {
+                              month: 'short',
+                              timeZone: 'UTC',
+                            })}
+                          </span>
+                        );
+                      })}
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -19,13 +19,13 @@ export function ByosEmptyDashboard() {
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
-            href="/dashboard/settings#byos-supabase"
+            href="/settings#byos-supabase"
             className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-on-primary transition hover:opacity-90"
           >
             Open in Settings
           </Link>
           <Link
-            href="/dashboard/settings#byos-sync"
+            href="/settings#byos-sync"
             className="inline-flex h-11 items-center justify-center rounded-full border border-outline-variant/40 bg-transparent px-6 text-sm font-medium text-on-surface transition hover:bg-surface-container-high"
           >
             Run sync in Settings

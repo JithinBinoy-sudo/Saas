@@ -56,7 +56,7 @@ describe('UploadDropzone', () => {
 
     await waitFor(() => {
       jest.advanceTimersByTime(650);
-      expect((globalThis as RedirectGlobals).__portlioRedirect).toHaveBeenCalledWith('/dashboard');
+      expect((globalThis as RedirectGlobals).__portlioRedirect).toHaveBeenCalledWith('/');
     });
   });
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 
-const mockPathname = jest.fn(() => '/dashboard');
+const mockPathname = jest.fn(() => '/');
 
 jest.mock('next/navigation', () => ({
   usePathname: () => mockPathname(),
@@ -29,11 +29,11 @@ const memberUser = {
 
 describe('Sidebar', () => {
   beforeEach(() => {
-    mockPathname.mockReturnValue('/dashboard');
+    mockPathname.mockReturnValue('/');
   });
 
   it('shows Upload section with Upload Data and Upload History when on upload routes', () => {
-    mockPathname.mockReturnValue('/dashboard/upload');
+    mockPathname.mockReturnValue('/upload');
     render(<Sidebar user={adminUser} companyMode="hosted" />);
     expect(screen.getByRole('button', { name: /^upload$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /upload data/i })).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe('Sidebar', () => {
   });
 
   it('shows Upload toggle for hosted when collapsed off upload routes', () => {
-    mockPathname.mockReturnValue('/dashboard');
+    mockPathname.mockReturnValue('/');
     render(<Sidebar user={adminUser} companyMode="hosted" />);
     expect(screen.getByRole('button', { name: /^upload$/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /upload data/i })).not.toBeInTheDocument();

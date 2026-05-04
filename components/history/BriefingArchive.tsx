@@ -313,7 +313,7 @@ export function BriefingArchive({ rows, totalCount, page, isAdmin, initialQuery 
                   status === 'complete' ? (
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        href={`/dashboard/briefings/${r.revenue_month}`}
+                        href={`/briefing/${r.revenue_month}`}
                         className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:bg-white/10"
                       >
                         View

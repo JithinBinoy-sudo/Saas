@@ -239,7 +239,7 @@ export function RunHistoryTable({ runs, totalCount, page, isAdmin }: Props) {
                 <TableCell>
                   {run.status === 'complete' && (
                     <Link
-                      href={`/dashboard/briefings/${run.revenue_month}`}
+                      href={`/briefing/${run.revenue_month}`}
                       className="text-sm font-medium text-blue-600 hover:underline"
                     >
                       View Briefing

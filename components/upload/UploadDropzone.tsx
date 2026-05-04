@@ -14,7 +14,7 @@ type Props = {
   redirectOnSuccessTo?: string;
 };
 
-export function UploadDropzone({ redirectOnSuccessTo = '/dashboard' }: Props) {
+export function UploadDropzone({ redirectOnSuccessTo = '/' }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [dragging, setDragging] = useState(false);
 

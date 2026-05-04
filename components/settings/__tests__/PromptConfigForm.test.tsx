@@ -10,7 +10,7 @@ import type { PromptConfig } from '../PromptConfigForm';
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
-  usePathname: () => '/dashboard/settings/prompt',
+  usePathname: () => '/settings/prompt',
 }));
 
 const DEFAULT_CONFIG: PromptConfig = {

@@ -8,7 +8,7 @@ import { ExportButton } from '../ExportButton';
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
-  usePathname: () => '/dashboard/settings/export',
+  usePathname: () => '/settings/export',
 }));
 
 const MONTHS = ['2026-03-01', '2026-02-01', '2026-01-01'];

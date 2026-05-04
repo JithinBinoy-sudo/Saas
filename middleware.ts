@@ -10,13 +10,6 @@ function isPublicPath(pathname: string): boolean {
 
 function isAdminPath(pathname: string): boolean {
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
-  // Dashboard admin hub (members use /dashboard/admin/setup only — not gated here)
-  if (pathname === '/dashboard/admin' || pathname.startsWith('/dashboard/admin/')) {
-    if (pathname === '/dashboard/admin/setup' || pathname.startsWith('/dashboard/admin/setup/')) {
-      return false;
-    }
-    return true;
-  }
   return false;
 }
 
@@ -81,23 +74,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   if (pathname.startsWith('/auth')) {
-    // Allow the auth UI even when onboarding isn't complete — otherwise users get
-    // "stuck" behind forced redirects and can't switch accounts / sign out cleanly.
-    if (schemaDeployed) return redirect(request, '/dashboard');
+    if (schemaDeployed) return redirect(request, '/');
     return response;
   }
 
   if (isAdminPath(pathname)) {
-    if (role !== 'admin') return redirect(request, '/dashboard/admin/setup');
+    if (role !== 'admin') return redirect(request, '/admin/setup');
     return response;
   }
 
-  if (pathname.startsWith('/dashboard')) {
-    if (!schemaDeployed) return redirect(request, '/onboarding');
-    if (companyMode === 'byos' && pathname.startsWith('/dashboard/upload')) {
-      return redirect(request, '/dashboard/settings');
-    }
-    return response;
+  if (!schemaDeployed && !pathname.startsWith('/onboarding') && !pathname.startsWith('/admin')) {
+    return redirect(request, '/onboarding');
+  }
+
+  if (companyMode === 'byos' && pathname.startsWith('/upload')) {
+    return redirect(request, '/settings');
   }
 
   return response;

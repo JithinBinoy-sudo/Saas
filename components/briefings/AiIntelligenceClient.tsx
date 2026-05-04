@@ -112,7 +112,7 @@ export function AiIntelligenceClient({
       });
 
       if (res.status === 409) {
-        router.push(`/dashboard/briefings/${month}`);
+        router.push(`/briefing/${month}`);
         router.refresh();
         return;
       }
@@ -123,7 +123,7 @@ export function AiIntelligenceClient({
         return;
       }
 
-      router.push(`/dashboard/briefings/${month}`);
+      router.push(`/briefing/${month}`);
       router.refresh();
     } catch {
       setErrorMsg('Network error');
@@ -261,7 +261,7 @@ export function AiIntelligenceClient({
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-white">Recent Briefings</h2>
             <Link
-              href="/dashboard/history"
+              href="/archive"
               className="text-sm font-medium text-cyan-400/90 transition hover:text-cyan-300"
             >
               View Archive →
@@ -283,7 +283,7 @@ export function AiIntelligenceClient({
                 return (
                   <li key={b.revenue_month}>
                     <Link
-                      href={`/dashboard/briefings/${b.revenue_month}`}
+                      href={`/briefing/${b.revenue_month}`}
                       className="group block h-full rounded-2xl border border-white/10 bg-zinc-900/40 p-5 shadow-[0px_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-md transition hover:border-white/15 hover:bg-zinc-900/55"
                     >
                       <div className="flex items-start justify-between gap-3">

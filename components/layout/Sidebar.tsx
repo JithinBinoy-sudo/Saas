@@ -23,26 +23,26 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/dashboard/briefings', label: 'AI Intelligence', icon: 'auto_awesome' },
+  { href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/archive', label: 'AI Intelligence', icon: 'auto_awesome' },
 ];
 
 const UPLOAD_SUBITEMS: NavItem[] = [
-  { href: '/dashboard/upload', label: 'Upload Data', icon: 'file_upload' },
-  { href: '/dashboard/upload/history', label: 'Upload History', icon: 'history' },
+  { href: '/upload', label: 'Upload Data', icon: 'file_upload' },
+  { href: '/upload/history', label: 'Upload History', icon: 'history' },
 ];
 
 const SETTINGS_ITEMS: NavItem[] = [
   {
-    href: '/dashboard/admin',
-    memberHref: '/dashboard/admin/setup',
+    href: '/admin',
+    memberHref: '/admin/setup',
     label: 'Admin',
     icon: 'admin_panel_settings',
   },
 ];
 
 const EXPORT_ITEM: NavItem = {
-  href: '/dashboard/settings/export',
+  href: '/settings/export',
   label: 'Export Data',
   icon: 'download',
 };
@@ -60,7 +60,7 @@ type Props = {
 export function Sidebar({ user, companyMode, workspaceHasAdmin }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const onUploadPath = pathname.startsWith('/dashboard/upload');
+  const onUploadPath = pathname.startsWith('/upload');
   const [uploadOpen, setUploadOpen] = useState(onUploadPath);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
@@ -111,14 +111,14 @@ export function Sidebar({ user, companyMode, workspaceHasAdmin }: Props) {
   }
 
   function linkActive(href: string) {
-    return href === '/dashboard'
+    return href === '/'
       ? pathname === href
       : pathname === href || pathname.startsWith(`${href}/`);
   }
 
   function renderItem(item: NavItem) {
     if (item.adminOnly && user.role !== 'admin') return null;
-    if (item.href === '/dashboard/admin') {
+    if (item.href === '/admin') {
       // Once a user has registered as admin, remove the "Admin" nav entry from the sidebar.
       if (user.role === 'admin') return null;
       // If an admin already exists, members can't claim admin anymore; hide the dead-end link.
@@ -282,7 +282,7 @@ export function Sidebar({ user, companyMode, workspaceHasAdmin }: Props) {
               className="absolute bottom-[calc(100%+10px)] left-0 w-full rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-[0px_20px_40px_rgba(0,0,0,0.55)] p-2"
             >
               <Link
-                href="/dashboard/settings"
+                href="/settings"
                 role="menuitem"
                 className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-on-surface-variant hover:text-white hover:bg-white/5 transition-all"
               >

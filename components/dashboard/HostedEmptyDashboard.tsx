@@ -19,14 +19,14 @@ export function HostedEmptyDashboard({ isAdmin }: { isAdmin: boolean }) {
       </div>
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
         <Link
-          href="/dashboard/upload"
+          href="/upload"
           className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-on-primary transition hover:opacity-90"
         >
           Upload reservation data
         </Link>
         {isAdmin && (
           <Link
-            href="/dashboard/admin/connect-supabase"
+            href="/admin/connect-supabase"
             className="inline-flex h-11 items-center justify-center rounded-full border border-outline-variant/40 bg-transparent px-6 text-sm font-medium text-on-surface transition hover:bg-surface-container-high"
           >
             Connect your Supabase

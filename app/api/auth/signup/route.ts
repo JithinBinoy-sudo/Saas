@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // New signups are members; first company admin is claimed via /dashboard/admin/setup.
+  // New signups are members; first company admin is claimed via /admin/setup.
   const { error: userError } = await supabase.from('users').insert({
     id: authUser.id,
     company_id: company.id,

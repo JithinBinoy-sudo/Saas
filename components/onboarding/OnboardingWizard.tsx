@@ -93,12 +93,12 @@ export function OnboardingWizard({
       const ok = await persistWizardProgress(4, mode);
       if (ok) setCurrentStep(4);
     } else {
-      router.push('/dashboard');
+      router.push('/');
     }
   }
 
   function handleDeployComplete() {
-    router.push('/dashboard');
+    router.push('/');
   }
 
   return (

@@ -56,7 +56,7 @@ export function RunPipelineButton({ currentModel, revenueMonth, configuredProvid
       }
 
       setState('success');
-      router.push(`/dashboard/briefings/${revenueMonth}`);
+      router.push(`/briefing/${revenueMonth}`);
       router.refresh();
     } catch {
       setErrorMsg('Network error');

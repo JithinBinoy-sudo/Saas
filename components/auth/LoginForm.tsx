@@ -41,7 +41,7 @@ export function LoginForm() {
       }
       const next = params.get('next');
       const safeNext = next && next.startsWith('/') ? next : null;
-      router.push(safeNext ?? '/dashboard');
+      router.push(safeNext ?? '/');
     } finally {
       setLoading(false);
     }

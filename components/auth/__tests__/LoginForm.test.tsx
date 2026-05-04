@@ -56,7 +56,7 @@ describe('LoginForm', () => {
         password: 'supersecret',
       });
     });
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/'));
   });
 
   it('displays error message when Supabase returns an error', async () => {

@@ -87,25 +87,25 @@ describe('middleware route protection', () => {
     profile = { user: null };
   });
 
-  it('redirects to /auth when visiting /dashboard with no session', async () => {
+  it('redirects to /auth when visiting / with no session', async () => {
     profile = { user: null };
-    const res = await middleware(makeRequest('/dashboard'));
+    const res = await middleware(makeRequest('/'));
     expect(getRedirect(res)).toBe('/auth');
   });
 
-  it('redirects /dashboard to /onboarding when schema_deployed is false', async () => {
+  it('redirects / to /onboarding when schema_deployed is false', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: false };
-    const res = await middleware(makeRequest('/dashboard'));
+    const res = await middleware(makeRequest('/'));
     expect(getRedirect(res)).toBe('/onboarding');
   });
 
-  it('allows /dashboard when schema is deployed', async () => {
+  it('allows / when schema is deployed', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: true };
-    const res = await middleware(makeRequest('/dashboard'));
+    const res = await middleware(makeRequest('/'));
     expect(getRedirect(res)).toBeNull();
   });
 
-  it('redirects BYOS /dashboard/upload to settings when schema is deployed', async () => {
+  it('redirects BYOS /upload to settings when schema is deployed', async () => {
     profile = {
       user: { id: 'u1' },
       company_id: 'c1',
@@ -113,11 +113,11 @@ describe('middleware route protection', () => {
       schema_deployed: true,
       mode: 'byos',
     };
-    const res = await middleware(makeRequest('/dashboard/upload'));
-    expect(getRedirect(res)).toBe('/dashboard/settings');
+    const res = await middleware(makeRequest('/upload'));
+    expect(getRedirect(res)).toBe('/settings');
   });
 
-  it('redirects BYOS /dashboard/upload/history to settings when schema is deployed', async () => {
+  it('redirects BYOS /upload/history to settings when schema is deployed', async () => {
     profile = {
       user: { id: 'u1' },
       company_id: 'c1',
@@ -125,11 +125,11 @@ describe('middleware route protection', () => {
       schema_deployed: true,
       mode: 'byos',
     };
-    const res = await middleware(makeRequest('/dashboard/upload/history'));
-    expect(getRedirect(res)).toBe('/dashboard/settings');
+    const res = await middleware(makeRequest('/upload/history'));
+    expect(getRedirect(res)).toBe('/settings');
   });
 
-  it('allows hosted /dashboard/upload when schema is deployed', async () => {
+  it('allows hosted /upload when schema is deployed', async () => {
     profile = {
       user: { id: 'u1' },
       company_id: 'c1',
@@ -137,31 +137,31 @@ describe('middleware route protection', () => {
       schema_deployed: true,
       mode: 'hosted',
     };
-    const res = await middleware(makeRequest('/dashboard/upload'));
+    const res = await middleware(makeRequest('/upload'));
     expect(getRedirect(res)).toBeNull();
   });
 
   it('redirects /admin to admin setup when role is member', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'member', schema_deployed: true };
     const res = await middleware(makeRequest('/admin'));
-    expect(getRedirect(res)).toBe('/dashboard/admin/setup');
+    expect(getRedirect(res)).toBe('/admin/setup');
   });
 
-  it('redirects /dashboard/admin to admin setup when role is member', async () => {
+  it('redirects /admin to admin setup when role is member', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'member', schema_deployed: true };
-    const res = await middleware(makeRequest('/dashboard/admin'));
-    expect(getRedirect(res)).toBe('/dashboard/admin/setup');
+    const res = await middleware(makeRequest('/admin'));
+    expect(getRedirect(res)).toBe('/admin/setup');
   });
 
-  it('allows /dashboard/admin when role is admin and schema is deployed', async () => {
+  it('allows /admin when role is admin and schema is deployed', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: true };
-    const res = await middleware(makeRequest('/dashboard/admin'));
+    const res = await middleware(makeRequest('/admin'));
     expect(getRedirect(res)).toBeNull();
   });
 
-  it('allows /dashboard/admin/setup when role is member and schema is deployed', async () => {
+  it('allows /admin/setup when role is member and schema is deployed', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'member', schema_deployed: true };
-    const res = await middleware(makeRequest('/dashboard/admin/setup'));
+    const res = await middleware(makeRequest('/admin/setup'));
     expect(getRedirect(res)).toBeNull();
   });
 
@@ -171,10 +171,10 @@ describe('middleware route protection', () => {
     expect(getRedirect(res)).toBeNull();
   });
 
-  it('redirects /auth to /dashboard when logged in with schema deployed', async () => {
+  it('redirects /auth to / when logged in with schema deployed', async () => {
     profile = { user: { id: 'u1' }, company_id: 'c1', role: 'admin', schema_deployed: true };
     const res = await middleware(makeRequest('/auth'));
-    expect(getRedirect(res)).toBe('/dashboard');
+    expect(getRedirect(res)).toBe('/');
   });
 
   it('allows /auth when logged in but onboarding is incomplete', async () => {

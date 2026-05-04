@@ -24,9 +24,9 @@ export function ConnectSupabaseWizard() {
           </p>
         </header>
         <DeploySchemaStep
-          onBack={() => router.push('/dashboard')}
+          onBack={() => router.push('/')}
           onComplete={() => {
-            router.push('/dashboard');
+            router.push('/');
             router.refresh();
           }}
         />

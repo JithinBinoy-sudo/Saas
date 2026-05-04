@@ -11,6 +11,6 @@ describe('DashboardEmptyState', () => {
   it('renders a link to the upload page', () => {
     render(<DashboardEmptyState />);
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '/dashboard/upload');
+    expect(link).toHaveAttribute('href', '/upload');
   });
 });

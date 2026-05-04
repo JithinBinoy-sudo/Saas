@@ -51,7 +51,7 @@ export function AdminSetupForm({ email }: Props) {
       }
       const supabase = createAppBrowserClient();
       await supabase.auth.signOut();
-      router.replace('/auth?tab=login&next=/dashboard/settings');
+      router.replace('/auth?tab=login&next=/settings');
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ export function AdminSetupForm({ email }: Props) {
       </div>
       {error ? <p className="text-sm text-rose-400">{error}</p> : null}
       <div className="mt-2 flex items-center justify-between gap-3">
-        <Link href="/dashboard" className={cn(buttonVariants({ variant: 'ghost' }), 'text-zinc-400 hover:text-white')}>
+        <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'text-zinc-400 hover:text-white')}>
           Cancel
         </Link>
         <Button

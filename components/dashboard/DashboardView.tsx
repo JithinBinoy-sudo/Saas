@@ -8,6 +8,7 @@ import { RiskBanner } from '@/components/dashboard/RiskBanner';
 import { PropertyTable } from '@/components/dashboard/PropertyTable';
 import { RecentBriefings } from '@/components/dashboard/RecentBriefings';
 import { GenerateBriefingDialog } from '@/components/dashboard/GenerateBriefingDialog';
+import { ForecastAutoTrigger } from '@/components/dashboard/ForecastAutoTrigger';
 import type { Property } from '@/lib/adapters/property';
 import type { ChartPoint } from '@/lib/adapters/chart';
 import type { KpiData } from '@/lib/adapters/kpis';
@@ -17,6 +18,7 @@ type MonthOption = { value: string; label: string };
 
 type Props = {
   selectedMonth: string; // 'YYYY-MM'
+  selectedMonthIso: string; // 'YYYY-MM-DD'
   monthOptions: MonthOption[];
   yearOptions: string[];
   kpis: KpiData;
@@ -24,6 +26,7 @@ type Props = {
   forecastBoundaryLabel: string | null;
   forecastModelLabel: string;
   asOfLabel: string;
+  hasForecast: boolean;
   properties: Property[];
   briefings: BriefingSummary[];
 };
@@ -32,6 +35,7 @@ const RISK_RANK = { High: 0, Medium: 1, Low: 2 } as const;
 
 export function DashboardView({
   selectedMonth,
+  selectedMonthIso,
   monthOptions,
   yearOptions,
   kpis,
@@ -39,6 +43,7 @@ export function DashboardView({
   forecastBoundaryLabel,
   forecastModelLabel,
   asOfLabel,
+  hasForecast,
   properties,
   briefings,
 }: Props) {
@@ -77,12 +82,18 @@ export function DashboardView({
         onGenerateClick={() => setBriefingOpen(true)}
       />
       <KpiStrip kpis={kpis} chartData={chartData} />
-      <PerformanceChart
-        chartData={chartData}
-        forecastBoundaryLabel={forecastBoundaryLabel}
-        modelLabel={forecastModelLabel}
-        asOfLabel={asOfLabel}
-      />
+      <div className="space-y-2">
+        <PerformanceChart
+          chartData={chartData}
+          forecastBoundaryLabel={forecastBoundaryLabel}
+          modelLabel={forecastModelLabel}
+          asOfLabel={asOfLabel}
+        />
+        <ForecastAutoTrigger
+          selectedMonth={selectedMonthIso}
+          hasForecast={hasForecast}
+        />
+      </div>
       <RiskBanner
         count={atRiskCount}
         active={riskFilterActive}

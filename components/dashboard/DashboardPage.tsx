@@ -101,6 +101,7 @@ export async function DashboardPage({ userId, monthParam }: Props) {
       <main className="container mx-auto px-6 py-8">
         <DashboardView
           selectedMonth={selectedYearMonth}
+          selectedMonthIso={dashboardData.selectedMonth}
           monthOptions={monthOptions}
           yearOptions={yearOptions}
           kpis={kpis}
@@ -108,6 +109,7 @@ export async function DashboardPage({ userId, monthParam }: Props) {
           forecastBoundaryLabel={forecastBoundaryLabel}
           forecastModelLabel={forecastModelLabel}
           asOfLabel={ISO_DATE(dashboardData.selectedMonth)}
+          hasForecast={dashboardData.forecastSeries.length > 0}
           properties={properties}
           briefings={briefings}
         />

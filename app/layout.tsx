@@ -3,10 +3,19 @@ import localFont from 'next/font/local';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { TopLoader } from '@/components/TopLoader';
+import { Inter } from "next/font/google";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
+  weight: "100 900",
+});
+
+const geistHeading = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-heading",
   weight: "100 900",
 });
 const geistMono = localFont({
@@ -26,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn('font-sans', geistSans.variable)}>
+    <html lang="en" className={cn('font-sans', geistSans.variable, "font-sans", inter.variable, geistHeading.variable)}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -6,7 +6,11 @@ export const metadata = {
   title: 'Portlio · Proptech Analytics',
 };
 
-export default async function RootPage() {
+export default async function RootPage({
+  searchParams,
+}: {
+  searchParams: { month?: string };
+}) {
   const supabase = createAppServerClient();
   const {
     data: { user },
@@ -16,5 +20,5 @@ export default async function RootPage() {
     return <LandingPage />;
   }
 
-  return <DashboardPage userId={user.id} />;
+  return <DashboardPage userId={user.id} monthParam={searchParams.month} />;
 }

@@ -46,17 +46,21 @@ describe('toChartData', () => {
       forecast: 1500,
       lower: 1500,
       upper: 1500,
+      band: [1500, 1500],
     });
     expect(out[2]).toEqual({
       month: 'Mar',
       forecast: 1700,
       lower: 1400,
       upper: 2000,
+      band: [1400, 2000],
     });
   });
 
   it('appends forecast tail when history is empty', () => {
     const out = toChartData([], [fc('2026-03-01', 1700, 1400, 2000)]);
-    expect(out).toEqual([{ month: 'Mar', forecast: 1700, lower: 1400, upper: 2000 }]);
+    expect(out).toEqual([
+      { month: 'Mar', forecast: 1700, lower: 1400, upper: 2000, band: [1400, 2000] },
+    ]);
   });
 });

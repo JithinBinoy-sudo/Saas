@@ -251,12 +251,6 @@ export function BriefingDetailView(props: Props) {
                 data={chartData}
                 margin={{ top: 10, right: 12, left: 0, bottom: 0 }}
               >
-                <defs>
-                  <linearGradient id="briefingBand" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.06} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis
                   dataKey="month"
@@ -281,19 +275,13 @@ export function BriefingDetailView(props: Props) {
                 />
                 <Area
                   type="monotone"
-                  dataKey="upper"
+                  dataKey="band"
                   stroke="none"
-                  fill="url(#briefingBand)"
+                  fill="var(--muted-foreground)"
+                  fillOpacity={0.18}
                   isAnimationActive={false}
                   connectNulls
-                />
-                <Area
-                  type="monotone"
-                  dataKey="lower"
-                  stroke="none"
-                  fill="var(--card)"
-                  isAnimationActive={false}
-                  connectNulls
+                  activeDot={false}
                 />
                 <Line
                   type="monotone"

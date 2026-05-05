@@ -9,6 +9,8 @@ export type ChartPoint = {
   forecast?: number | null;
   lower?: number | null;
   upper?: number | null;
+  /** [lower, upper] tuple consumed by Recharts as a range-area for the confidence band. */
+  band?: [number, number] | null;
 };
 
 function shortMonthLabel(isoDate: string): string {
@@ -42,6 +44,7 @@ export function toChartData(
           forecast: lastValue,
           lower: lastValue,
           upper: lastValue,
+          band: [lastValue, lastValue],
         }
       : null;
 
@@ -50,6 +53,10 @@ export function toChartData(
     forecast: p.predicted_revenue,
     lower: p.lower_bound,
     upper: p.upper_bound,
+    band:
+      p.lower_bound != null && p.upper_bound != null
+        ? [p.lower_bound, p.upper_bound]
+        : null,
   }));
 
   if (boundary) {

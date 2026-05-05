@@ -177,7 +177,7 @@ export default async function BriefingDetailPage({
   const modelLabel = briefingRow.model ?? 'GPT-4o';
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <Link
         href="/archive"
         className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"

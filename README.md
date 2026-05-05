@@ -1,4 +1,4 @@
-# Portlio
+# PortlioX
 
 AI-powered portfolio intelligence for short-term rental operators. Connect your data (Supabase BYOS or hosted), map your columns, and get automated monthly briefings powered by GPT-4o.
 

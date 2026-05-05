@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ExecutiveSummary } from '@/components/briefing/ExecutiveSummary';
 import type { ChartPoint } from '@/lib/adapters/chart';
 
 export type BriefingDetailKpis = {
@@ -228,8 +229,8 @@ export function BriefingDetailView(props: Props) {
               </Button>
             </div>
           </div>
-          <div className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-            {summaryText}
+          <div className="mt-5">
+            <ExecutiveSummary markdown={summaryText} />
           </div>
         </Card>
       )}

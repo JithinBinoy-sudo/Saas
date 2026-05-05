@@ -8,7 +8,7 @@ import { SignupForm } from '@/components/auth/SignupForm';
 export function AuthTabs() {
   const params = useSearchParams();
   const initial = params.get('tab') === 'signup' ? 'signup' : 'login';
-  const [value, setValue] = useState<string>(initial);
+  const [value, setValue] = useState<'login' | 'signup'>(initial);
 
   const toggleMode = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -17,19 +17,17 @@ export function AuthTabs() {
 
   return (
     <div className="w-full">
-      <div className="pt-2">
-        {value === 'login' ? <LoginForm /> : <SignupForm />}
-      </div>
-      
-      <div className="mt-8 text-center text-xs text-on-surface-variant">
+      {value === 'login' ? <LoginForm /> : <SignupForm />}
+
+      <div className="mt-6 text-center text-xs text-muted-foreground">
         {value === 'login' ? (
           <>
             Don&apos;t have an account?{' '}
             <button
               onClick={toggleMode}
-              className="text-primary hover:text-white transition-colors border-none bg-transparent"
+              className="font-medium text-primary hover:underline"
             >
-              Request Access
+              Sign up
             </button>
           </>
         ) : (
@@ -37,7 +35,7 @@ export function AuthTabs() {
             Already have an account?{' '}
             <button
               onClick={toggleMode}
-              className="text-primary hover:text-white transition-colors border-none bg-transparent"
+              className="font-medium text-primary hover:underline"
             >
               Log in
             </button>

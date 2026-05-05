@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowRight, Check, Loader2 } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 import { createAppBrowserClient } from '@/lib/supabase/browser';
 
 type Props = {
@@ -15,7 +17,6 @@ type Props = {
 
 export function AdminSetupForm({ email }: Props) {
   const router = useRouter();
-  // Default to preserving the existing credential; changing password should be an explicit opt-in.
   const [keepCurrentPassword, setKeepCurrentPassword] = useState(true);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,7 +27,9 @@ export function AdminSetupForm({ email }: Props) {
     e.preventDefault();
     setError(null);
     if (!keepCurrentPassword && (!password || !confirmPassword)) {
-      setError('Please enter and confirm your new password, or keep your current sign-in password.');
+      setError(
+        'Please enter and confirm your new password, or keep your current sign-in password.',
+      );
       return;
     }
     setLoading(true);
@@ -39,7 +42,10 @@ export function AdminSetupForm({ email }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; errors?: Record<string, string[]> };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        errors?: Record<string, string[]>;
+      };
       if (!res.ok) {
         if (data.errors) {
           const first = Object.values(data.errors).flat()[0];
@@ -59,34 +65,18 @@ export function AdminSetupForm({ email }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="admin-email" className="text-xs text-zinc-500">
-          Work email
-        </Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="admin-email">Work email</Label>
         <div className="relative">
-          <span
+          <Input id="admin-email" type="email" value={email} readOnly className="pr-10" />
+          <Check
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
             aria-hidden
-            className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-zinc-500"
-          >
-            mail
-          </span>
-          <Input
-            id="admin-email"
-            type="email"
-            value={email}
-            readOnly
-            className="h-11 rounded-full bg-white/5 border-white/10 text-white/90 pl-11 pr-11 focus-visible:ring-primary/30"
           />
-          <span
-            aria-hidden
-            className="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[18px] text-primary"
-          >
-            check
-          </span>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="rounded-md border border-border bg-muted/40 p-4">
         <div className="flex items-start gap-3">
           <input
             id="admin-keep-password"
@@ -96,88 +86,75 @@ export function AdminSetupForm({ email }: Props) {
               setKeepCurrentPassword(ev.target.checked);
               setError(null);
             }}
-            className="mt-1 h-4 w-4 shrink-0 rounded border-white/20 bg-transparent accent-primary"
+            className="mt-1 h-4 w-4 shrink-0 rounded border-input accent-primary"
           />
           <div className="space-y-1">
-            <Label htmlFor="admin-keep-password" className="cursor-pointer text-sm font-semibold text-white/90">
+            <Label
+              htmlFor="admin-keep-password"
+              className="cursor-pointer text-sm font-semibold"
+            >
               Keep my current sign-in password
             </Label>
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              Continue using the credentials provided during your initial enterprise SSO onboarding.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Continue using the credentials provided during your initial enterprise SSO
+              onboarding.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="admin-password" className="text-xs text-zinc-500">
-          New sign-in password
-        </Label>
-        <div className="relative">
-          <span
-            aria-hidden
-            className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-zinc-500"
-          >
-            lock
-          </span>
-          <Input
-            id="admin-password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-            required={!keepCurrentPassword}
-            minLength={8}
-            disabled={keepCurrentPassword}
-            className={cn(
-              'h-11 rounded-full bg-white/5 border-white/10 text-white/90 pl-11 pr-4 focus-visible:ring-primary/30',
-              keepCurrentPassword && 'opacity-60'
-            )}
-          />
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="admin-password">New sign-in password</Label>
+        <Input
+          id="admin-password"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(ev) => setPassword(ev.target.value)}
+          required={!keepCurrentPassword}
+          minLength={8}
+          disabled={keepCurrentPassword}
+          placeholder="••••••••"
+        />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="admin-confirm" className="text-xs text-zinc-500">
-          Confirm new password
-        </Label>
-        <div className="relative">
-          <span
-            aria-hidden
-            className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-zinc-500"
-          >
-            lock_reset
-          </span>
-          <Input
-            id="admin-confirm"
-            type="password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(ev) => setConfirmPassword(ev.target.value)}
-            required={!keepCurrentPassword}
-            minLength={8}
-            disabled={keepCurrentPassword}
-            className={cn(
-              'h-11 rounded-full bg-white/5 border-white/10 text-white/90 pl-11 pr-4 focus-visible:ring-primary/30',
-              keepCurrentPassword && 'opacity-60'
-            )}
-          />
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="admin-confirm">Confirm new password</Label>
+        <Input
+          id="admin-confirm"
+          type="password"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(ev) => setConfirmPassword(ev.target.value)}
+          required={!keepCurrentPassword}
+          minLength={8}
+          disabled={keepCurrentPassword}
+          placeholder="••••••••"
+        />
       </div>
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="mt-2 flex items-center justify-between gap-3">
-        <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'text-zinc-400 hover:text-white')}>
+        <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }))}>
           Cancel
         </Link>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="rounded-full bg-gradient-to-r from-primary to-secondary text-on-primary-fixed hover:opacity-95"
-        >
-          {loading ? 'Saving…' : 'Register as admin'}
-          <span className="material-symbols-outlined ml-2 text-[18px]" aria-hidden>
-            arrow_forward
-          </span>
+        <Button type="submit" disabled={loading} className="gap-1.5">
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            <>
+              Register as admin
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </form>

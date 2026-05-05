@@ -9,7 +9,7 @@ import {
 } from '@/lib/onboarding/wizardProgress';
 
 export const metadata = {
-  title: 'Portlio — Setup',
+  title: 'Portlio · Setup',
 };
 
 export default async function OnboardingPage() {
@@ -54,14 +54,8 @@ export default async function OnboardingPage() {
   const initialMode = initialWizardDisplayMode(savedWizardMode, initialStep, companyRow.mode);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0b0b0d] px-4 py-12 text-white">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.18),rgba(0,0,0,0)_55%),radial-gradient(ellipse_at_bottom,rgba(168,85,247,0.14),rgba(0,0,0,0)_50%)]"
-      />
-      <div className="relative w-full max-w-[860px]">
-        <OnboardingWizard initialStep={initialStep} initialMode={initialMode} />
-      </div>
+    <div className="mx-auto w-full max-w-3xl">
+      <OnboardingWizard initialStep={initialStep} initialMode={initialMode} />
     </div>
   );
 }
